@@ -20,7 +20,7 @@ spec:
           name: {{ .nodeGroup.instanceClass.imageName }}
     {{- else if hasKey .Values.nodeManager.internal.cloudProvider.openstack.instances "imageName" }}
       image:
-        fileter:
+        filter:
           name: {{ .Values.nodeManager.internal.cloudProvider.openstack.instances.imageName }}
     {{- else }}
       {{ cat "No imageName provided neither in cloud provider configuration nor in OpenStackInstanceClass" .nodeGroup.cloudInstances.classReference.name | fail }}
@@ -63,8 +63,9 @@ spec:
         {{ cat "No mainNetwork provided neither in cloud provider configuration nor in OpenStackInstanceClass" .nodeGroup.cloudInstances.classReference.name | fail }}
       {{- end }}
       {{- range $networks | uniq }}
-      - filter:
-          name: {{ . | quote }}
+      - network:
+          filter:
+            name: {{ . | quote }}
         securityGroups:
         {{- range $securityGroups | uniq }}
         - filter:
