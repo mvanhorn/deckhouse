@@ -78,8 +78,7 @@ func DeleteValidatingWebhookConfigurations(ctx context.Context, kubeCl *client.K
 
 func DeleteDeckhouseDeployment(ctx context.Context, kubeCl *client.KubernetesClient) error {
 	return retry.NewLoop("Delete Deckhouse", 45, 5*time.Second).WithShowError(false).RunContext(ctx, func() error {
-		foregroundPolicy := metav1.DeletePropagationForeground
-		err := kubeCl.AppsV1().Deployments(deckhouseDeploymentNamespace).Delete(ctx, deckhouseDeploymentName, metav1.DeleteOptions{PropagationPolicy: &foregroundPolicy})
+		err := kubeCl.AppsV1().Deployments(deckhouseDeploymentNamespace).Delete(ctx, deckhouseDeploymentName, metav1.DeleteOptions{PropagationPolicy: new(metav1.DeletePropagationForeground)})
 		if err != nil && !errors.IsNotFound(err) {
 			return err
 		}

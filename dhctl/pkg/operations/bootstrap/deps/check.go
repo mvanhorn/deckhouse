@@ -221,8 +221,7 @@ func (c *DependenciesChecker) runBinariesCheckScript(ctx context.Context) ([]byt
 	cmd := c.nodeInterface.Command("bash", "-c", remoteCmd)
 	output, err := cmd.CombinedOutput(ctx)
 	if err != nil {
-		var ee *exec.ExitError
-		if errors.As(err, &ee) {
+		if ee, ok := errors.AsType[*exec.ExitError](err); ok {
 			logger.DebugF("SSH exit code: %v\n", ee.ExitCode())
 		}
 		e := fmt.Errorf("remote dependency check failed: %w - %s", err, string(output))
@@ -264,8 +263,7 @@ func (c *DependenciesChecker) sshErrorBreakPredicate(err error) bool {
 	if err == nil {
 		return true
 	}
-	var ee *exec.ExitError
-	if errors.As(err, &ee) && ee.ExitCode() == 255 {
+	if ee, ok := errors.AsType[*exec.ExitError](err); ok && ee.ExitCode() == 255 {
 		c.loggerProvider().WarnF("SSH connection failed (exit 255), retrying in 5 seconds...")
 		return false
 	}
