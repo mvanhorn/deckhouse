@@ -76,6 +76,8 @@ spec:
     {{- if hasKey .nodeGroup.instanceClass "rootDiskSize" }}
       rootVolume:
         sizeGiB: {{ .nodeGroup.instanceClass.rootDiskSize }}
+        availabilityZone:
+          from: Machine
     {{- end }}
       tags:
       {{- $tags := dict }}

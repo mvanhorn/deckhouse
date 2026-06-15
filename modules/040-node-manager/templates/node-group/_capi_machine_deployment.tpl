@@ -41,6 +41,7 @@ spec:
       {{- include "helm_lib_module_labels" (list $context (dict "node-group" $ng.name)) | nindent 6 }}
     spec:
       clusterName: {{ $context.Values.nodeManager.internal.cloudProvider.capiClusterName | quote }}
+      failureDomain: {{ $zone_name | quote }}
       bootstrap:
         dataSecretName: {{ $bootstrap_secret_name | quote }}
       infrastructureRef:
