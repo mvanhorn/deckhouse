@@ -134,7 +134,6 @@ var auditPolicyBasicServiceAccounts = []string{
 	"system:serviceaccount:d8-monitoring:image-availability-exporter",
 	"system:serviceaccount:d8-monitoring:kube-state-metrics",
 	"system:serviceaccount:d8-monitoring:loki",
-	"system:serviceaccount:d8-monitoring:monitoring-ping",
 	"system:serviceaccount:d8-monitoring:node-exporter",
 	"system:serviceaccount:d8-monitoring:oom-kills-exporter",
 	"system:serviceaccount:d8-monitoring:prometheus",
