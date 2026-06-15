@@ -34,14 +34,14 @@ func RenderAndSavePreflightCheckPortsScript(globalOptions *options.GlobalOptions
 	log.DebugLn("Rendering check ports script")
 	scriptPath := filepath.Join(globalOptions.CandiDir, "bashible", checkPortsScriptPath)
 
-	return RenderAndSaveTemplate("check_ports.sh", scriptPath, map[string]interface{}{})
+	return RenderAndSaveTemplate("check_ports.sh", scriptPath, map[string]any{})
 }
 
 func RenderAndSavePreflightCheckDeckhouseUserScript(globalOptions *options.GlobalOptions) (string, error) {
 	log.DebugLn("Rendering check user script")
 	scriptPath := filepath.Join(globalOptions.CandiDir, "bashible", checkDeckhouseUserScriptPath)
 
-	return RenderAndSaveTemplate("check_deckhouse_user.sh", scriptPath, map[string]interface{}{})
+	return RenderAndSaveTemplate("check_deckhouse_user.sh", scriptPath, map[string]any{})
 }
 
 func RenderAndSavePreflightCheckLocalhostScript(globalOptions *options.GlobalOptions) (string, error) {
@@ -51,7 +51,7 @@ func RenderAndSavePreflightCheckLocalhostScript(globalOptions *options.GlobalOpt
 	return RenderAndSaveTemplate(
 		"check_localhost.sh",
 		scriptPath,
-		map[string]interface{}{},
+		map[string]any{},
 	)
 }
 
@@ -62,7 +62,7 @@ func RenderAndSavePreflightReverseTunnelOpenScript(url string, globalOptions *op
 	return RenderAndSaveTemplate(
 		"check_reverse_tunnel_open.sh",
 		scriptPath,
-		map[string]interface{}{
+		map[string]any{
 			"url": url,
 		},
 	)
@@ -75,7 +75,7 @@ func RenderAndSaveKillReverseTunnelScript(host, port string, globalOptions *opti
 	return RenderAndSaveTemplate(
 		"kill_reverse_tunnel.sh",
 		scriptPath,
-		map[string]interface{}{
+		map[string]any{
 			"host": host,
 			"port": port,
 		},
@@ -84,7 +84,7 @@ func RenderAndSaveKillReverseTunnelScript(host, port string, globalOptions *opti
 
 func RenderAndSavePreflightCheckScript(
 	filename string,
-	params map[string]interface{},
+	params map[string]any,
 	globalOptions *options.GlobalOptions,
 ) (string, error) {
 	log.DebugLn("Rendering check localhost script")
