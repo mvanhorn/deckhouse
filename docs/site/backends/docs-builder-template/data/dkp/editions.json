@@ -115,7 +115,6 @@
       "operator-prometheus",
       "priority-class",
       "prometheus",
-      "prometheus-metrics-adapter",
       "registry",
       "registrypackages",
       "registry-packages-proxy",

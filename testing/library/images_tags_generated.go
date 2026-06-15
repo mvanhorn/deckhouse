@@ -417,10 +417,6 @@ var DefaultImagesDigests = map[string]interface{}{
 		"promxy":                      "imageHash-prometheus-promxy",
 		"trickster":                   "imageHash-prometheus-trickster",
 	},
-	"prometheusMetricsAdapter": map[string]interface{}{
-		"k8sPrometheusAdapter":   "imageHash-prometheusMetricsAdapter-k8sPrometheusAdapter",
-		"prometheusReverseProxy": "imageHash-prometheusMetricsAdapter-prometheusReverseProxy",
-	},
 	"prometheusPushgateway": map[string]interface{}{
 		"pushgateway": "imageHash-prometheusPushgateway-pushgateway",
 	},
