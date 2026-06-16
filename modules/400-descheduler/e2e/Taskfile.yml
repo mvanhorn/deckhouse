@@ -11,7 +11,7 @@ tasks:
     desc: Run all descheduler e2e tests with verbose output
     cmds:
       - mkdir -p ./reports/
-      - chainsaw test --test-dir ./tests/ --full-name --full-name --report-format JUNIT-TEST --report-name chainsaw-report --report-path ./reports/
+      - chainsaw test --test-dir ./tests/ --full-name --report-format JUNIT-TEST --report-name chainsaw-report --report-path ./reports/
 
   run:low-node-utilization:
     desc: Run LowNodeUtilization e2e test
@@ -30,6 +30,48 @@ tasks:
     cmds:
       - mkdir -p ./reports/
       - chainsaw test --test-dir ./tests/exclude-namespaces-from-processing/ --full-name --report-format JUNIT-TEST --report-name chainsaw-report --report-path ./reports/
+
+  run:statefulset:
+    desc: Run all StatefulSet e2e tests
+    cmds:
+      - mkdir -p ./reports/
+      - chainsaw test
+        --test-dir ./tests/statefulset-remove-duplicates/
+        --test-dir ./tests/statefulset-pdb-blocks-eviction/
+        --test-dir ./tests/statefulset-pdb-allows-one-disruption/
+        --test-dir ./tests/statefulset-single-replica-eviction/
+        --test-dir ./tests/descheduler-minreplicas-not-supported/
+        --full-name --report-format JUNIT-TEST --report-name chainsaw-report --report-path ./reports/
+
+  run:statefulset-remove-duplicates:
+    desc: Run StatefulSet RemoveDuplicates (no PDB) e2e test
+    cmds:
+      - mkdir -p ./reports/
+      - chainsaw test --test-dir ./tests/statefulset-remove-duplicates/ --full-name --report-format JUNIT-TEST --report-name chainsaw-report --report-path ./reports/
+
+  run:statefulset-pdb-blocks-eviction:
+    desc: Run StatefulSet + PDB maxUnavailable=0 e2e test
+    cmds:
+      - mkdir -p ./reports/
+      - chainsaw test --test-dir ./tests/statefulset-pdb-blocks-eviction/ --full-name --report-format JUNIT-TEST --report-name chainsaw-report --report-path ./reports/
+
+  run:statefulset-pdb-allows-one-disruption:
+    desc: Run StatefulSet + PDB maxUnavailable=1 e2e test
+    cmds:
+      - mkdir -p ./reports/
+      - chainsaw test --test-dir ./tests/statefulset-pdb-allows-one-disruption/ --full-name --report-format JUNIT-TEST --report-name chainsaw-report --report-path ./reports/
+
+  run:statefulset-single-replica-eviction:
+    desc: Run single-replica StatefulSet eviction e2e test
+    cmds:
+      - mkdir -p ./reports/
+      - chainsaw test --test-dir ./tests/statefulset-single-replica-eviction/ --full-name --report-format JUNIT-TEST --report-name chainsaw-report --report-path ./reports/
+
+  run:minreplicas-not-supported:
+    desc: Run minReplicas-not-supported e2e test
+    cmds:
+      - mkdir -p ./reports/
+      - chainsaw test --test-dir ./tests/descheduler-minreplicas-not-supported/ --full-name --report-format JUNIT-TEST --report-name chainsaw-report --report-path ./reports/
 
   dry-run:
     desc: Validate all test YAML without executing (no cluster required)
