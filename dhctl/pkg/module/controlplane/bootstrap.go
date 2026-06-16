@@ -56,6 +56,7 @@ type LoopsParams struct {
 
 type ModuleSettings interface {
 	SignatureMode() (string, error)
+	TemplateConfigForBootstrap(nodeIP string) (*TemplateConfig, error)
 }
 
 type EncryptionConfiguration struct {
@@ -108,6 +109,10 @@ func (p *BootstrapPreparator) WithDirPrefix(pr string) *BootstrapPreparator {
 	p.dirPathPrefix = pr
 
 	return p
+}
+
+func (p *BootstrapPreparator) TemplateConfigForBootstrap(nodeIP string) (*TemplateConfig, error) {
+	return p.settings.TemplateConfigForBootstrap(nodeIP)
 }
 
 func (p *BootstrapPreparator) PrepareModule(ctx context.Context) error {

@@ -1,5 +1,5 @@
 /*
-Copyright 2025 Flant JSC
+Copyright 2026 Flant JSC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,15 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package config
+package controlplane
 
-// ControlPlaneTemplateConfig is the data passed to control-plane template rendering.
+// TemplateConfig is the data passed to control-plane template rendering.
 //
 // Settings holds ModuleConfig control-plane-manager spec.settings (authoritative source).
 // ClusterConfiguration holds legacy ClusterConfiguration data (fallback during migration).
 // Templates choose the source explicitly: `coalesce .settings.field .clusterConfiguration.field`.
 // ToMap is the only boundary with the Go template engine.
-type ControlPlaneTemplateConfig struct {
+type TemplateConfig struct {
 	RunType    string                 `json:"runType"`
 	NodeIP     string                 `json:"nodeIP"`
 	NodeName   string                 `json:"nodeName"`
@@ -31,6 +31,7 @@ type ControlPlaneTemplateConfig struct {
 	VersionMap map[string]interface{} `json:"-"`
 
 	Settings             map[string]interface{} `json:"settings"`
+	APIServer            map[string]interface{} `json:"apiserver"`
 	ClusterConfiguration map[string]interface{} `json:"clusterConfiguration"`
 }
 
@@ -38,7 +39,7 @@ type ControlPlaneTemplateConfig struct {
 // to a flat map so templates can access all fields uniformly. VersionMap keys (k8s version
 // data, image digests, etc.) are merged into the root. Explicit fields win over VersionMap
 // keys with the same name.
-func (c *ControlPlaneTemplateConfig) ToMap() map[string]interface{} {
+func (c *TemplateConfig) ToMap() map[string]interface{} {
 	m := make(map[string]interface{})
 	for k, v := range c.VersionMap {
 		m[k] = v
@@ -49,6 +50,7 @@ func (c *ControlPlaneTemplateConfig) ToMap() map[string]interface{} {
 	m["registry"] = c.Registry
 	m["images"] = c.Images
 	m["settings"] = c.Settings
+	m["apiserver"] = c.APIServer
 	m["clusterConfiguration"] = c.ClusterConfiguration
 	return m
 }

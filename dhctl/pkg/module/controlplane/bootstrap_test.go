@@ -311,3 +311,6 @@ func newTestModuleSettings(m string) *testModuleSettings {
 func (s *testModuleSettings) SignatureMode() (string, error) {
 	return s.mode, nil
 }
+func (s *testModuleSettings) TemplateConfigForBootstrap(nodeIP string) (*TemplateConfig, error) {
+	return nil, nil
+}
