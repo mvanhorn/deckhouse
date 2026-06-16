@@ -43,7 +43,7 @@ func TestControlplaneRendering(t *testing.T) {
 		"Edge Cases":                    testEdgeCases,
 		"Missing Coverage":              testMissingCoverage,
 		"Full Manifests Rendering":      testManifestsRendering,
-		"Encryption API Server args":     testSignatureArgsAPIServerRender,
+		"Encryption API Server args":    testSignatureArgsAPIServerRender,
 	}
 
 	for name, doTest := range tests {
