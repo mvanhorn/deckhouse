@@ -72,20 +72,21 @@ sudo -i d8 k patch mc global --type merge \
   <li>
     <p>Создайте <a href="/modules/node-manager/cr.html#nodegroup">NodeGroup</a> <code>worker</code> и добавьте узел с помощью с помощью Cluster API Provider Static (CAPS) или вручную — с помощью bootstrap-скрипта.</p>
     
-<div class="tabs">
-        <a id='tab_block_caps' href="javascript:void(0)" class="tabs__btn tabs__btn_caps_bootstrap active"
-        onclick="openTabAndSaveStatus(event, 'tabs__btn_caps_bootstrap', 'tabs__caps', 'block_bootstrap');
-                 openTabAndSaveStatus(event, 'tabs__btn_caps_bootstrap', 'tabs__bootstrap', 'block_caps');">
-        CAPS
-        </a>
-        <a id='tab_block_bootstrap' href="javascript:void(0)" class="tabs__btn tabs__btn_caps_bootstrap"
-        onclick="openTabAndSaveStatus(event, 'tabs__btn_caps_bootstrap', 'tabs__bootstrap', 'block_caps');
-                 openTabAndSaveStatus(event, 'tabs__btn_caps_bootstrap', 'tabs__caps', 'block_bootstrap');">
-        Bootstrap-скрипт
-        </a>
-</div>
+<div class="tabs-block">
+  <ul class="tabs__container tabs__container--title">
+    <li id='tab_block_caps' href="javascript:void(0)" class="tabs__item tabs__item--title active"
+    onclick="openTabAndSaveStatus(event, 'tabs__item--title', 'tabs__caps', 'block_bootstrap');
+              openTabAndSaveStatus(event, 'tabs__item--title', 'tabs__bootstrap', 'block_caps');">
+    CAPS
+    </li>
+    <li id='tab_block_bootstrap' href="javascript:void(0)" class="tabs__item tabs__item--title"
+    onclick="openTabAndSaveStatus(event, 'tabs__item--title', 'tabs__bootstrap', 'block_caps');
+              openTabAndSaveStatus(event, 'tabs__item--title', 'tabs__caps', 'block_bootstrap');">
+    Bootstrap-скрипт
+    </li>
+  </ul>
 
-  <div id="block_bootstrap" class="tabs__bootstrap" style="display: none;">
+  <div id="block_bootstrap" class="tabs__container tabs__container--descr tabs__bootstrap">
   <ul>
   <li><p>Создайте NodeGroup с именем <code>worker</code>, выполнив на <strong>master-узле</strong> следующую команду:</p>
 <div markdown="1">
@@ -119,7 +120,7 @@ echo <Base64-КОД-СКРИПТА> | base64 -d | bash
   </li>
   </ul>
   </div>
-  <div id="block_caps" class="tabs__caps">
+  <div id="block_caps" class="tabs__container tabs__container--descr tabs__caps active">
   <ul>
 <li><p>Создайте NodeGroup с именем <code>worker</code>, выполнив на <strong>master-узле</strong> следующую команду:</p>
 <div markdown="1">
@@ -237,6 +238,7 @@ EOF
   </li>
   </ul>
   </div>
+  </div>
   </li>
   <li><p>Убедитесь, что все узлы кластера находятся в статусе <code>Ready</code>.</p>
 <p>Выполните на <strong>master-узле</strong> следующую команду, чтобы получить список узлов кластера:</p>
@@ -351,11 +353,12 @@ sudo -i d8 k create -f $PWD/user.yml
 </div>
 </li>
 <li><strong>Создание DNS-записи</strong>, для доступа в веб-интерфейсы кластера
-  <ul><li>Выясните публичный IP-адрес узла, на котором работает Ingress-контроллер:
-  <div class="highlight">
-  <pre class="highlight"><code>sudo -i d8 k get pods -n d8-ingress-nginx -o=jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.status.hostIP}{"\n"}{end}' | grep '^controller' | awk '{print $2}'</code></pre>
-  </div>
-  </li>
+
+{% alert type="info" %}
+Если в качестве шаблона DNS-имён кластера вы используете `sslip.io` или аналогичный wildcard-DNS-сервис, создавать DNS-записи вручную не требуется.
+{% endalert %}
+
+  <ul><li>Выясните публичный IP-адрес узла, на котором работает Ingress-контроллер.</li>
   <li>Если у вас есть возможность добавить DNS-запись используя DNS-сервер:
     <ul>
       <li>Если ваш шаблон DNS-имен кластера является <a href="https://en.wikipedia.org/wiki/Wildcard_DNS_record">wildcard

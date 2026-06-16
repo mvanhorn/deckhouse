@@ -79,11 +79,12 @@ func TestCheckPlanDestructiveChanges(t *testing.T) {
 			data, err := os.ReadFile(tc.plan)
 			require.NoError(t, err)
 
-			runner := newTestRunner(&fakeExecutor{showResp: fakeResponse{
-				resp: data,
-				err:  nil,
-				code: 0,
-			},
+			runner := newTestRunner(&fakeExecutor{
+				showResp: fakeResponse{
+					resp: data,
+					err:  nil,
+					code: 0,
+				},
 				VMResource: tc.vm,
 			})
 
@@ -348,7 +349,7 @@ func TestConcurrentExec(t *testing.T) {
 		return exec.Plan(ctx, PlanOpts{})
 	})
 
-	require.Equal(t, "Infrastructure utility have been already executed.", err.Error())
+	require.Equal(t, "Infrastructure utility has already been executed.", err.Error())
 }
 
 var destructivelyChanged = &plan.DestructiveChanges{
@@ -357,12 +358,14 @@ var destructivelyChanged = &plan.DestructiveChanges{
 		{
 			CurrentValue: map[string]any{
 				"allow_stopping_for_update": true,
-				"boot_disk": []any{map[string]any{
-					"auto_delete":       true,
-					"device_name":       "test",
-					"disk_id":           "test",
-					"initialize_params": []any{map[string]any{"description": "", "image_id": "tests", "name": "kubernetes-data-root", "size": float64(35), "snapshot_id": "", "type": "network-ssd"}},
-					"mode":              "READ_WRITE"},
+				"boot_disk": []any{
+					map[string]any{
+						"auto_delete":       true,
+						"device_name":       "test",
+						"disk_id":           "test",
+						"initialize_params": []any{map[string]any{"description": "", "image_id": "tests", "name": "kubernetes-data-root", "size": float64(35), "snapshot_id": "", "type": "network-ssd"}},
+						"mode":              "READ_WRITE",
+					},
 				},
 				"created_at":                "2021-02-26T09:41:42Z",
 				"description":               "",

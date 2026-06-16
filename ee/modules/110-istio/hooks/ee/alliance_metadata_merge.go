@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"log/slog"
+	"net"
 	"sort"
 	"strings"
 	"time"
@@ -60,10 +61,23 @@ type IstioMulticlusterMergeCrdInfo struct {
 }
 
 type ServiceEntry struct {
-	Name      string                              `json:"name"`
-	Hostname  string                              `json:"hostname"`
-	Ports     []eeCrd.FederationPublicServicePort `json:"ports"`
-	Endpoints []eeCrd.FederationIngressGateway    `json:"endpoints"`
+	Name       string                              `json:"name"`
+	Hostname   string                              `json:"hostname"`
+	Resolution string                              `json:"resolution"`
+	Ports      []eeCrd.FederationPublicServicePort `json:"ports"`
+	Endpoints  []eeCrd.FederationIngressGateway    `json:"endpoints"`
+}
+
+func federationServiceEntryResolution(endpoints []eeCrd.FederationIngressGateway) string {
+	for _, ep := range endpoints {
+		if strings.TrimSpace(ep.Address) == "" {
+			return "DNS"
+		}
+		if net.ParseIP(ep.Address) == nil {
+			return "DNS"
+		}
+	}
+	return "STATIC"
 }
 
 func sortedEndpointsKey(endpoints []eeCrd.FederationIngressGateway) string {
@@ -406,7 +420,10 @@ federationsLoop:
 			input.Logger.Warn("public metadata for IstioFederation wasn't fetched yet", slog.String("name", federationInfo.Name))
 			continue federationsLoop
 		}
-
+		federationInfo.Public.AllianceRef = &eeCrd.PublicMetadataAllianceRef{
+			Kind: "IstioFederation",
+			Name: federationInfo.Name,
+		}
 		remotePublicMetadata[federationInfo.Public.ClusterUUID] = *federationInfo.Public
 
 		if federationInfo.PublicServices == nil {
@@ -522,6 +539,7 @@ federationsLoop:
 				return se.Endpoints[i].Port < se.Endpoints[j].Port
 			})
 			se.Name = serviceEntryName(se.Hostname, se.Endpoints)
+			se.Resolution = federationServiceEntryResolution(se.Endpoints)
 			serviceEntries = append(serviceEntries, *se)
 		}
 	}
@@ -546,7 +564,10 @@ multiclustersLoop:
 			input.Logger.Warn("public metadata for IstioMulticluster wasn't fetched yet", slog.String("name", multiclusterInfo.Name))
 			continue multiclustersLoop
 		}
-
+		multiclusterInfo.Public.AllianceRef = &eeCrd.PublicMetadataAllianceRef{
+			Kind: "IstioMulticluster",
+			Name: multiclusterInfo.Name,
+		}
 		remotePublicMetadata[multiclusterInfo.Public.ClusterUUID] = *multiclusterInfo.Public
 
 		if multiclusterInfo.APIHost == "" || multiclusterInfo.NetworkName == "" {

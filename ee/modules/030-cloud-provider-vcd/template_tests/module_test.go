@@ -40,7 +40,7 @@ const globalValues = `
     clusterType: Cloud
     defaultCRI: Containerd
     kind: ClusterConfiguration
-    kubernetesVersion: "1.31"
+    kubernetesVersion: "1.32"
     podSubnetCIDR: 10.111.0.0/16
     podSubnetNodeCIDRPrefix: "24"
     serviceSubnetCIDR: 10.222.0.0/16
@@ -51,7 +51,7 @@ const globalValues = `
       worker: 1
       master: 3
     podSubnet: 10.0.1.0/16
-    kubernetesVersion: 1.31.0
+    kubernetesVersion: 1.32.0
     clusterUUID: cluster
 `
 
@@ -64,13 +64,10 @@ const moduleValuesA = `
       providerDiscoveryData:
         kind: VCDCloudProviderDiscoveryData
         apiVersion: deckhouse.io/v1
-        zones:
-        - default
-      discoveryData:
-        kind: VCDCloudProviderDiscoveryData
-        apiVersion: deckhouse.io/v1
         vcdInstallationVersion: "10.4.2"
         vcdAPIVersion: "37.2"
+        zones:
+        - default
       providerClusterConfiguration:
         apiVersion: deckhouse.io/v1
         kind: VCDClusterConfiguration
@@ -126,15 +123,12 @@ const moduleValuesB = `
       providerDiscoveryData:
         kind: VCDCloudProviderDiscoveryData
         apiVersion: deckhouse.io/v1
-        zones:
-        - default
-      discoveryData:
-        kind: VCDCloudProviderDiscoveryData
-        apiVersion: deckhouse.io/v1
         vcdInstallationVersion: "10.4.2"
         vcdAPIVersion: "37.2"
         loadBalancer:
           enabled: false
+        zones:
+        - default
       providerClusterConfiguration:
         apiVersion: deckhouse.io/v1
         kind: VCDClusterConfiguration
@@ -168,15 +162,12 @@ const moduleValuesC = `
       providerDiscoveryData:
         kind: VCDCloudProviderDiscoveryData
         apiVersion: deckhouse.io/v1
-        zones:
-        - default
-      discoveryData:
-        kind: VCDCloudProviderDiscoveryData
-        apiVersion: deckhouse.io/v1
         vcdInstallationVersion: "10.4.2"
         vcdAPIVersion: "37.2"
         loadBalancer:
           enabled: true
+        zones:
+        - default
       providerClusterConfiguration:
         apiVersion: deckhouse.io/v1
         kind: VCDClusterConfiguration
@@ -265,7 +256,6 @@ var _ = Describe("Module :: cloud-provider-vcd :: helm template ::", func() {
 			Expect(providerSpecificRegistrationSecretData["capiClusterName"].String()).To(Equal(base64.StdEncoding.EncodeToString([]byte("v1rtual-app"))))
 			Expect(providerSpecificRegistrationSecretData["sshPublicKey"].String()).To(Equal(base64.StdEncoding.EncodeToString([]byte("rsa-aaaa"))))
 
-
 			providerSpecificBashibleStepsSecret := f.KubernetesResource("Secret", "kube-system", fmt.Sprintf("d8-cloud-provider-%s-bashible-steps", providerID))
 			Expect(providerSpecificBashibleStepsSecret.Exists()).To(BeFalse())
 
@@ -273,7 +263,7 @@ var _ = Describe("Module :: cloud-provider-vcd :: helm template ::", func() {
 			Expect(providerSpecificBashibleBootstrapSecret.Exists()).To(BeTrue())
 			providerSpecificBashibleBootstrapSecretData := providerSpecificBashibleBootstrapSecret.Field("data").Map()
 			Expect(len(providerSpecificBashibleBootstrapSecretData) >= 1).To(BeTrue())
-			Expect(len(providerSpecificBashibleBootstrapSecretData["bootstrap-networks.sh.tpl"].String()) > 0 ).To(BeTrue())
+			Expect(len(providerSpecificBashibleBootstrapSecretData["bootstrap-networks.sh.tpl"].String()) > 0).To(BeTrue())
 
 			providerSpecificCAPISecret := f.KubernetesResource("Secret", "kube-system", fmt.Sprintf("d8-cloud-provider-%s-capi", providerID))
 			Expect(providerSpecificCAPISecret.Exists()).To(BeTrue())
@@ -283,6 +273,68 @@ var _ = Describe("Module :: cloud-provider-vcd :: helm template ::", func() {
 			Expect(providerSpecificCAPISecretData).To(Not(BeEmpty()))
 			Expect(len(providerSpecificCAPISecretData) >= 1).To(BeTrue())
 			Expect(len(providerSpecificCAPISecretData["cluster.yaml"].String()) > 0).To(BeTrue())
+
+			userAuthzUser := f.KubernetesGlobalResource("ClusterRole", "d8:user-authz:cloud-provider-vcd:user")
+			Expect(userAuthzUser.Exists()).To(BeTrue())
+			Expect(userAuthzUser.Field("rules").String()).To(MatchYAML(`
+- apiGroups:
+  - deckhouse.io
+  resources:
+  - vcdinstanceclasses
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - vcdclusters
+  - vcdclustertemplates
+  - vcdmachines
+  - vcdmachinetemplates
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - deckhouse.io
+  resources:
+  - vcdaffinityrules
+  verbs:
+  - get
+  - list
+  - watch`))
+
+			userAuthzClusterAdmin := f.KubernetesGlobalResource("ClusterRole", "d8:user-authz:cloud-provider-vcd:cluster-admin")
+			Expect(userAuthzClusterAdmin.Exists()).To(BeTrue())
+			Expect(userAuthzClusterAdmin.Field("rules").String()).To(MatchYAML(`
+- apiGroups:
+  - deckhouse.io
+  resources:
+  - vcdinstanceclasses
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - patch
+  - update
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - vcdclusters
+  - vcdclustertemplates
+  - vcdmachines
+  - vcdmachinetemplates
+  verbs:
+  - patch
+  - update
+- apiGroups:
+  - deckhouse.io
+  resources:
+  - vcdaffinityrules
+  verbs:
+  - patch
+  - update`))
 
 			masterAffinityRule := f.KubernetesGlobalResource("VCDAffinityRule", "sandbox-master")
 			Expect(masterAffinityRule.Exists()).To(BeTrue())
@@ -352,7 +404,7 @@ spec:
 - --cloud-provider=vmware-cloud-director
 - --allow-untagged-cloud=true
 - --configure-cloud-routes=false
-- --controllers=cloud-node,cloud-node-lifecycle
+- --controllers=cloud-node-controller,cloud-node-lifecycle-controller
 - --v=4`))
 			Expect(ccmDeployment.Field("spec.template.spec.containers.0.volumeMounts").String()).To(MatchYAML(`
 - mountPath: /etc/cloud
@@ -431,12 +483,6 @@ spec:
 - port: 443
   protocol: TCP
   targetPort: webhook-server`))
-
-			capcdMutatingWebhook := f.KubernetesGlobalResource("MutatingWebhookConfiguration", "capcd-mutating-webhook")
-			Expect(capcdMutatingWebhook.Exists()).To(BeTrue())
-
-			capcdValidatingWebhook := f.KubernetesGlobalResource("ValidatingWebhookConfiguration", "capcd-validating-webhook")
-			Expect(capcdValidatingWebhook.Exists()).To(BeTrue())
 
 			csiControllerDeployment := f.KubernetesResource("Deployment", "d8-cloud-provider-vcd", "csi-controller")
 			Expect(csiControllerDeployment.Exists()).To(BeTrue())
@@ -622,7 +668,7 @@ node-role.deckhouse.io/control-plane: ""`))
 - --cloud-provider=vmware-cloud-director
 - --allow-untagged-cloud=true
 - --configure-cloud-routes=false
-- --controllers=cloud-node,cloud-node-lifecycle
+- --controllers=cloud-node-controller,cloud-node-lifecycle-controller
 - --v=4
 `))
 		})
@@ -649,7 +695,7 @@ node-role.deckhouse.io/control-plane: ""`))
 - --cloud-provider=vmware-cloud-director
 - --allow-untagged-cloud=true
 - --configure-cloud-routes=false
-- --controllers=cloud-node,cloud-node-lifecycle,service
+- --controllers=cloud-node-controller,cloud-node-lifecycle-controller,service-lb-controller
 - --v=4
 `))
 		})
@@ -752,7 +798,7 @@ node-role.deckhouse.io/control-plane: ""`))
 			securityPolicyException := f.KubernetesResource("SecurityPolicyException", "d8-cloud-provider-vcd", "capcd-controller-manager")
 			Expect(securityPolicyException.Exists()).To(BeTrue())
 			Expect(securityPolicyException.Field("spec.network.hostNetwork.allowedValue").Bool()).To(BeTrue())
-			Expect(securityPolicyException.Field("spec.network.hostNetwork.metadata.description").String()).To(ContainSubstring("CAPCD"))
+			Expect(securityPolicyException.Field("spec.network.hostNetwork.metadata.description").String()).To(ContainSubstring("CAPI"))
 		})
 
 		It("must render SecurityPolicyException for csi-controller", func() {

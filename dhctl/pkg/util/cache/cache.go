@@ -22,16 +22,14 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/deckhouse/deckhouse/dhctl/pkg/app"
 	"github.com/deckhouse/deckhouse/dhctl/pkg/log"
 	"github.com/deckhouse/deckhouse/dhctl/pkg/state"
 	"github.com/deckhouse/deckhouse/dhctl/pkg/util/stringsutil"
 )
 
-// NewTempStateCache creates new cache instance in tmp directory
-func NewTempStateCache(identity string) (*StateCache, error) {
-	cacheDir := filepath.Join(app.GetCacheDir(), stringsutil.Sha256Encode(identity))
-	return NewStateCache(cacheDir)
+// NewTempStateCache creates new cache instance under baseDir, namespaced by identity.
+func NewTempStateCache(baseDir, identity string) (*StateCache, error) {
+	return NewStateCache(filepath.Join(baseDir, stringsutil.Sha256Encode(identity)))
 }
 
 type StateCache struct {
@@ -148,7 +146,7 @@ func (s *StateCache) CleanWithExceptions(ctx context.Context, excludeKeys ...str
 		return nil
 	})
 	if err != nil {
-		log.WarnF("Can't getting keys to remove: %s ...\n", err)
+		log.WarnF("Can't get keys to remove: %s ...\n", err)
 		return
 	}
 

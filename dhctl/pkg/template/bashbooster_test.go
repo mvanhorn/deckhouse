@@ -16,11 +16,12 @@ package template
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	config "github.com/deckhouse/deckhouse/dhctl/pkg/config"
-	"github.com/deckhouse/deckhouse/dhctl/pkg/config/directoryconfig"
 )
 
 var clusterConfig = `
@@ -28,7 +29,7 @@ var clusterConfig = `
 apiVersion: deckhouse.io/v1
 kind: ClusterConfiguration
 clusterType: Static
-kubernetesVersion: "1.31"
+kubernetesVersion: "1.32"
 podSubnetCIDR: 10.222.0.0/16
 serviceSubnetCIDR: 10.111.0.0/16
 proxy:
@@ -48,16 +49,20 @@ deckhouse:
 `
 
 func TestRenderBashBooster(t *testing.T) {
-	dc := &directoryconfig.DirectoryConfig{
-		DownloadDir:      "/tmp",
-		DownloadCacheDir: "/tmp/cache",
-	}
-	metaConfig, err := config.ParseConfigFromData(context.TODO(), clusterConfig+initConfig, config.DummyPreparatorProvider(), dc)
+	metaConfig, err := config.ParseConfigFromData(context.TODO(), clusterConfig+initConfig, config.DummyPreparatorProvider(), nil)
 	if err != nil {
 		t.Errorf("ParseConfigFromData error: %v", err)
 	}
+	mingetPath := filepath.Join(t.TempDir(), "minget")
+	if err := os.WriteFile(mingetPath, []byte("test-minget"), 0o600); err != nil {
+		t.Fatalf("WriteFile error: %v", err)
+	}
+	t.Setenv("DHCTL_MINGET_PATH", mingetPath)
 
-	bashibleData, _ := metaConfig.ConfigForBashibleBundleTemplate("10.0.0.2")
+	bashibleData, err := metaConfig.ConfigForBashibleBundleTemplate("10.0.0.2")
+	if err != nil {
+		t.Fatalf("ConfigForBashibleBundleTemplate error: %v", err)
+	}
 	data, err := RenderBashBooster("/deckhouse/candi/bashible/bashbooster/", bashibleData)
 	if err != nil {
 		t.Errorf("Rendering bash booster error: %v", err)

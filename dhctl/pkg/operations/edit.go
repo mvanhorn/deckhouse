@@ -20,16 +20,25 @@ import (
 
 	"sigs.k8s.io/yaml"
 
-	"github.com/deckhouse/deckhouse/dhctl/pkg/app"
+	"github.com/deckhouse/deckhouse/dhctl/pkg/app/options"
 	"github.com/deckhouse/deckhouse/dhctl/pkg/config"
-	"github.com/deckhouse/deckhouse/dhctl/pkg/config/directoryconfig"
 	"github.com/deckhouse/deckhouse/dhctl/pkg/log"
 )
 
-func Edit(data []byte, dc *directoryconfig.DirectoryConfig) ([]byte, error) {
-	schemaStore := config.NewSchemaStore(dc)
+// EditOptions bundles the values Edit/SecretEdit used to read from the
+// dhctl/pkg/app globals: the editor binary, the scratch directory, and the
+// sanity-check flag. Each is optional — empty fields fall back to the same
+// defaults the globals carried (EDITOR env / "vi", os.TempDir, false).
+type EditOptions struct {
+	Editor      string
+	TmpDir      string
+	SanityCheck bool
+}
 
-	editor := app.Editor
+func Edit(data []byte, globalOptions *options.GlobalOptions, opts EditOptions) ([]byte, error) {
+	schemaStore := config.NewSchemaStore(globalOptions)
+
+	editor := opts.Editor
 	if editor == "" {
 		editor = os.Getenv("EDITOR")
 		if editor == "" {
@@ -37,7 +46,7 @@ func Edit(data []byte, dc *directoryconfig.DirectoryConfig) ([]byte, error) {
 		}
 	}
 
-	tmpFile, err := os.CreateTemp(app.TmpDirName, "dhctl-editor.*.yaml")
+	tmpFile, err := os.CreateTemp(opts.TmpDir, "dhctl-editor.*.yaml")
 	if err != nil {
 		log.ErrorF("can't save cluster configuration: %s\n", err)
 		return nil, err
@@ -45,7 +54,7 @@ func Edit(data []byte, dc *directoryconfig.DirectoryConfig) ([]byte, error) {
 
 	err = os.WriteFile(tmpFile.Name(), data, 0o600)
 	if err != nil {
-		log.ErrorF("can't write write cluster configuration to the file %s: %s\n", tmpFile.Name(), err)
+		log.ErrorF("can't write cluster configuration to the file %s: %s\n", tmpFile.Name(), err)
 		return nil, err
 	}
 

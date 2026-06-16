@@ -47,7 +47,7 @@ func Serve(ctx context.Context, params settings.ServerParams) error {
 		return err
 	}
 
-	dhctllog.InitLoggerWithOptions("silent", dhctllog.LoggerOptions{})
+	dhctllog.InitLoggerWithOptions("silent", dhctllog.LoggerOptions{}, false)
 	lvl := &slog.LevelVar{}
 	lvl.Set(slog.LevelDebug)
 	log := logger.NewLogger(lvl).With(slog.String("component", "server"))
@@ -109,7 +109,7 @@ func Serve(ctx context.Context, params settings.ServerParams) error {
 	reflection.Register(s)
 
 	// init services
-	validationService := validation.New(config.NewSchemaStore(params.DownloadDirConfig))
+	validationService := validation.New(config.NewSchemaStore(params.GlobalOptions))
 	statusService := status.New(requestsCounter)
 
 	// register services

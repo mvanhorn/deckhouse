@@ -35,6 +35,8 @@ import (
 	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/deckhouse/lib-connection/pkg/ssh/session"
+	"github.com/deckhouse/lib-connection/pkg/ssh/testssh"
 	sdk "github.com/deckhouse/module-sdk/pkg/utils"
 
 	v1 "github.com/deckhouse/deckhouse/dhctl/pkg/apis/deckhouse/v1"
@@ -46,16 +48,12 @@ import (
 	"github.com/deckhouse/deckhouse/dhctl/pkg/operations/destroy/deckhouse"
 	"github.com/deckhouse/deckhouse/dhctl/pkg/operations/destroy/static"
 	"github.com/deckhouse/deckhouse/dhctl/pkg/operations/phases"
-	"github.com/deckhouse/deckhouse/dhctl/pkg/system/node/session"
-	"github.com/deckhouse/deckhouse/dhctl/pkg/system/node/testssh"
 	"github.com/deckhouse/deckhouse/dhctl/pkg/util/cache"
 	"github.com/deckhouse/deckhouse/dhctl/pkg/util/fs"
 	"github.com/deckhouse/deckhouse/dhctl/pkg/util/retry"
 )
 
-var (
-	rootTmpDirStatic = path.Join(os.TempDir(), "dhctl-test-static-destroy")
-)
+var rootTmpDirStatic = path.Join(os.TempDir(), "dhctl-test-static-destroy")
 
 func TestStaticDestroy(t *testing.T) {
 	defer func() {
@@ -1227,7 +1225,6 @@ func TestStaticDestroy(t *testing.T) {
 			})
 		}
 	})
-
 }
 
 type testStaticDestroyTestParams struct {
@@ -1729,18 +1726,22 @@ func createTestStaticDestroyTest(t *testing.T, params testStaticDestroyTestParam
 		cloudStateProvider:   nil,
 		sshClientProvider:    sshProvider,
 		tmpDir:               tmpDir,
+		// Shrink inter-attempt waits — the production defaults (1-2s) are
+		// padding for real cluster latency the unit test does not exercise.
+		// 1s budget per loop is enough for the background goroutines that
+		// mark nodes ready, while keeping the failing-path tests fast.
 		staticLoopsParams: static.LoopsParams{
 			NodeUser: retry.NewEmptyParams(
-				retry.WithWait(2*time.Second),
-				retry.WithAttempts(4),
+				retry.WithWait(50*time.Millisecond),
+				retry.WithAttempts(10),
 			),
 			DestroyMaster: retry.NewEmptyParams(
-				retry.WithWait(1*time.Second),
+				retry.WithWait(50*time.Millisecond),
 				retry.WithAttempts(1),
 			),
 			GetMastersIPs: retry.NewEmptyParams(
-				retry.WithWait(1*time.Second),
-				retry.WithAttempts(2),
+				retry.WithWait(50*time.Millisecond),
+				retry.WithAttempts(10),
 			),
 		},
 	}

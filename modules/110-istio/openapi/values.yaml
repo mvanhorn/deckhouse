@@ -10,7 +10,7 @@ properties:
         type: object
         default: {}
         x-examples:
-          - {"1.25": { "fullVersion": "1.25.2", "revision": "1x25", "imageSuffix": "V1x25x2", "isReady": false, "supportsAmbient": false } } # must be real
+          - {"1.25": { "fullVersion": "1.25.2", "revision": "1x25", "imageSuffix": "V1x25x2", "isReady": false, "supportsAmbient": false, "supportsOperator": true } } # must be real
         additionalProperties:
           type: object
           properties:
@@ -29,6 +29,9 @@ properties:
             supportsAmbient:
               type: boolean
               x-examples: [false]
+            supportsOperator:
+              type: boolean
+              x-examples: [true]
       kialiSigningKey:
         type: string
         x-examples:
@@ -36,8 +39,8 @@ properties:
       istioToK8sCompatibilityMap:
         type: object
         default:
-          "1.21": ["1.31", "1.32", "1.33", "1.34", "1.35"]
-          "1.25": ["1.31", "1.32", "1.33", "1.34", "1.35"]
+          "1.21": ["1.32", "1.33", "1.34", "1.35", "1.36"]
+          "1.25": ["1.32", "1.33", "1.34", "1.35", "1.36"]
         additionalProperties:
           type: array
           items:
@@ -61,10 +64,6 @@ properties:
           root:
             type: string
             x-examples: ["---ROOT PEM---"]
-      enableAmbientMode:
-        type: boolean
-        default: false
-        x-examples: [true]
       federations:
         type: array
         default: []
@@ -74,7 +73,7 @@ properties:
         type: array
         default: []
         x-examples:
-        - [{"name": "zzz-xxx-ccc-a1b2c3d4", "hostname": "zzz.xxx.ccc", "ports": [{"name": "ddd", "port": 2345, "protocol": "TCP"}], "endpoints": [{"address": "1.2.3.4", "port": 15443}]}]
+        - [{"name": "zzz-xxx-ccc-a1b2c3d4", "hostname": "zzz.xxx.ccc", "resolution": "STATIC", "ports": [{"name": "ddd", "port": 2345, "protocol": "TCP"}], "endpoints": [{"address": "1.2.3.4", "port": 15443}]}]
       multiclusters:
         type: array
         default: []

@@ -1,4 +1,4 @@
-// Copyright 2021 Flant JSC
+// Copyright 2026 Flant JSC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,13 +16,12 @@ package template
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"path/filepath"
 
+	"github.com/deckhouse/deckhouse/dhctl/pkg/app/options"
 	"github.com/deckhouse/deckhouse/dhctl/pkg/config"
-	"github.com/deckhouse/deckhouse/dhctl/pkg/config/directoryconfig"
 	"github.com/deckhouse/deckhouse/dhctl/pkg/log"
+	"github.com/deckhouse/deckhouse/dhctl/pkg/telemetry"
 )
 
 const bootstrapDir = "/bootstrap"
@@ -32,21 +31,17 @@ func PrepareBootstrap(
 	templateController *Controller,
 	nodeIP string,
 	metaConfig *config.MetaConfig,
-	dc *directoryconfig.DirectoryConfig,
+	globalOptions *options.GlobalOptions,
 ) error {
+	ctx, span := telemetry.StartSpan(ctx, "PrepareBootstrap")
+	defer span.End()
+
 	bashibleData, err := metaConfig.ConfigForBashibleBundleTemplate(nodeIP)
 	if err != nil {
 		return err
 	}
 
-	_, err = os.Stat(candiDir)
-	if err != nil {
-		if dc == nil {
-			return fmt.Errorf("could not get downloadDir")
-		}
-		candiDir = filepath.Join(dc.DownloadDir, "deckhouse", "candi")
-		candiBashibleDir = filepath.Join(candiDir, "bashible")
-	}
+	candiBashibleDir := filepath.Join(globalOptions.CandiDir, "bashible")
 
 	saveInfo := []saveFromTo{
 		{
@@ -54,11 +49,11 @@ func PrepareBootstrap(
 			to:   bootstrapDir,
 			data: bashibleData,
 			ignorePaths: map[string]struct{}{
-				filepath.Join(candiBashibleDir, "bootstrap", "03-prepare-bashible.sh.tpl"): {}, // will running in next stage
+				filepath.Join(candiBashibleDir, "bootstrap", "02-bootstrap-bashible.sh.tpl"): {}, // will running in next stage
 			},
 		},
 		{
-			from: filepath.Join(candiDir, "cloud-providers", metaConfig.ProviderName, "bashible", "common-steps"),
+			from: filepath.Join(globalOptions.CandiDir, "cloud-providers", metaConfig.ProviderName, "bashible", "common-steps"),
 			to:   bootstrapDir,
 			data: bashibleData,
 		},

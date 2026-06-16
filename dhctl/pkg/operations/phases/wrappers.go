@@ -84,7 +84,6 @@ func (a *PhaseActionWithStateCache[OperationPhaseDataT]) Run(ctx context.Context
 	}
 
 	completeData, err := action()
-
 	if err != nil {
 		return err
 	}
@@ -123,7 +122,7 @@ func (a *phaseActionWithError[OperationPhaseDataT]) Run(ctx context.Context, pha
 }
 
 func (a *phaseActionWithError[OperationPhaseDataT]) CompleteSub(phase OperationSubPhase) error {
-	return fmt.Errorf("SubPhase '%s' cannot be complete: %w", phase, a.err)
+	return fmt.Errorf("SubPhase '%s' cannot be completed: %w", phase, a.err)
 }
 
 type (
@@ -158,6 +157,7 @@ type PipelineOpts struct {
 	LoggerProvider log.LoggerProvider
 	PipelineName   string
 }
+
 type PipelineWithStateCache[OperationPhaseDataT any] struct {
 	mu       sync.Mutex
 	started  bool
@@ -305,7 +305,7 @@ func (p *PipelineWithStateCache[OperationPhaseDataT]) initPipeline(ctx context.C
 	}
 
 	if err := p.phaseContext.InitPipeline(ctx, p.stateCache); err != nil {
-		return p.wrapError(fmt.Errorf("cannot init pipline: %w", err))
+		return p.wrapError(fmt.Errorf("cannot init pipeline: %w", err))
 	}
 
 	return nil

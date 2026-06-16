@@ -18,12 +18,13 @@ import (
 	"bytes"
 	"context"
 	"io"
-
-	external "github.com/deckhouse/lib-dhctl/pkg/log"
+	"os"
+	"path"
+	"strings"
+	"time"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
-
-	"github.com/deckhouse/deckhouse/dhctl/pkg/app"
+	external "github.com/deckhouse/lib-dhctl/pkg/log"
 )
 
 var (
@@ -33,9 +34,16 @@ var (
 )
 
 var (
-	defaultLogger Logger = newExternalLogger(external.NewDummyLogger(app.IsDebug))
+	defaultLogger Logger = newExternalLogger(external.NewDummyLogger(false))
 	emptyLogger   Logger = newExternalLogger(external.NewSilentLogger())
+	debugEnabled  bool
+	loggerOpts    logOpts
 )
+
+type logOpts struct {
+	LoggerPath string
+	Operation  string
+}
 
 const (
 	ProcessPreflight = "preflight"
@@ -86,30 +94,66 @@ type LoggerOptions struct {
 	DebugStream io.Writer
 }
 
-func InitLogger(loggerType string) error {
-	return initLoggerWithOptions(loggerType, LoggerOptions{
-		IsDebug: app.IsDebug,
-	})
+func InitLogger(loggerType string, interactive bool) error {
+	return initLoggerWithOptions(
+		loggerType,
+		LoggerOptions{
+			IsDebug: debugEnabled,
+		},
+		interactive,
+	)
 }
 
-func InitLoggerWithOptions(loggerType string, opts LoggerOptions) {
-	if err := initLoggerWithOptions(loggerType, opts); err != nil {
+func SetDebugEnabled(enabled bool) {
+	debugEnabled = enabled
+}
+
+func SetLoggerOpts(path, op string) {
+	loggerOpts = logOpts{
+		LoggerPath: path,
+		Operation:  op,
+	}
+}
+
+func InitLoggerWithOptions(loggerType string, opts LoggerOptions, interactive bool) {
+	if err := initLoggerWithOptions(loggerType, opts, interactive); err != nil {
 		panic(err)
 	}
 }
 
 func WrapWithTeeLogger(writer io.WriteCloser, bufSize int) error {
-	ext := defaultLogger.(*ExternalLogger)
+	var logger external.Logger
 
-	tee, err := external.WrapWithTeeLogger(ext.logger, writer, bufSize)
+	ext, ok := defaultLogger.(*ExternalLogger)
+	if ok {
+		logger = ext.logger
+	} else {
+		i := defaultLogger.(*InteractiveLogger)
+		logger = i.logger
+	}
+
+	tee, err := external.WrapWithTeeLogger(logger, writer, bufSize)
 	if err != nil {
 		return err
 	}
 
-	ext = &ExternalLogger{logger: tee}
-	initExternalKlog(ext)
+	if ok {
+		ext = &ExternalLogger{logger: tee}
+		err := initExternalKlog(ext)
+		if err != nil {
+			return err
+		}
 
-	defaultLogger = ext
+		defaultLogger = ext
+	} else {
+		i := newInteractiveLogger(tee, true)
+		err := initInteractiveKlog(i)
+		if err != nil {
+			return err
+		}
+
+		defaultLogger = i
+	}
 
 	return nil
 }
@@ -151,7 +195,7 @@ func getExternalLoggerWrapper(loggerType string, opts LoggerOptions) (*ExternalL
 	}
 	// Mute Shell-Operator logs
 	log.Default().SetLevel(log.LevelFatal)
-	if app.IsDebug {
+	if opts.IsDebug {
 		// Enable shell-operator log, because it captures klog output
 		// todo: capture output of klog with default logger instead
 		log.Default().SetLevel(log.LevelDebug)
@@ -162,8 +206,15 @@ func getExternalLoggerWrapper(loggerType string, opts LoggerOptions) (*ExternalL
 	return l, nil
 }
 
-func initLoggerWithOptions(loggerType string, opts LoggerOptions) error {
-	l, err := getExternalLoggerWrapper(loggerType, opts)
+func initLoggerWithOptions(loggerType string, opts LoggerOptions, interactive bool) error {
+	var l Logger
+	var err error
+	if interactive {
+		l, err = getInteractiveLoggerWrapper(loggerType, opts, interactive)
+	} else {
+		l, err = getExternalLoggerWrapper(loggerType, opts)
+	}
+
 	if err != nil {
 		return err
 	}
@@ -359,17 +410,57 @@ func GetDefaultLogger() Logger {
 }
 
 func ExternalLoggerProvider(logger Logger) external.LoggerProvider {
-	ext := logger.(*ExternalLogger)
-	return external.SimpleLoggerProvider(ext.logger)
+	var l external.Logger
+	ext, ok := logger.(*ExternalLogger)
+	if ok {
+		l = ext.logger
+	} else {
+		i := logger.(*InteractiveLogger)
+		wrapper := &InteractiveLoggerWrapper{logger: i.logger, interactive: i.interactive, phaseChan: i.phaseChan, logChan: i.logChan}
+		return external.SimpleLoggerProvider(wrapper)
+	}
+
+	return external.SimpleLoggerProvider(l)
 }
 
 func GetSilentLogger() Logger {
-	ext := defaultLogger.(*ExternalLogger)
+	var l external.Logger
+	ext, ok := defaultLogger.(*ExternalLogger)
+	if ok {
+		l = ext.logger
+	} else {
+		i := defaultLogger.(*InteractiveLogger)
+		l = i.logger
+	}
 
-	switch ext.logger.(type) {
+	switch l.(type) {
 	default:
 		return emptyLogger
 	case *external.TeeLogger:
-		return ext.NewSilentLogger()
+		if ok {
+			return ext.NewSilentLogger()
+		}
+		return defaultLogger.(*InteractiveLogger).NewSilentLogger()
 	}
+}
+
+func NewLogToFile(prefix string) (Logger, error) {
+	cmdStr := strings.Join([]string{loggerOpts.Operation, prefix}, "-")
+	logFile := cmdStr + "-" + time.Now().Format("20060102150405") + ".log"
+	logPath := path.Join(loggerOpts.LoggerPath, logFile)
+
+	outFile, err := os.Create(logPath)
+	if err != nil {
+		return nil, err
+	}
+
+	bufSize := 1024
+	logger := ExternalLoggerProvider(emptyLogger)()
+
+	tee, err := external.WrapWithTeeLogger(logger, outFile, bufSize)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ExternalLogger{logger: tee}, nil
 }

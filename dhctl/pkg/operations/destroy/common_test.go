@@ -37,6 +37,9 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
+	"github.com/deckhouse/lib-connection/pkg/ssh/session"
+	"github.com/deckhouse/lib-connection/pkg/ssh/testssh"
+
 	"github.com/deckhouse/deckhouse/dhctl/pkg/apis"
 	capi "github.com/deckhouse/deckhouse/dhctl/pkg/apis/capi/v1beta1"
 	v1 "github.com/deckhouse/deckhouse/dhctl/pkg/apis/deckhouse/v1"
@@ -49,8 +52,6 @@ import (
 	"github.com/deckhouse/deckhouse/dhctl/pkg/operations/destroy/deckhouse"
 	"github.com/deckhouse/deckhouse/dhctl/pkg/operations/destroy/kube"
 	dhctlstate "github.com/deckhouse/deckhouse/dhctl/pkg/state"
-	"github.com/deckhouse/deckhouse/dhctl/pkg/system/node/session"
-	"github.com/deckhouse/deckhouse/dhctl/pkg/system/node/testssh"
 )
 
 const (
@@ -115,9 +116,7 @@ provider:
 	inputUser   = "notexists"
 )
 
-var (
-	inputPrivateKeys = []string{"/tmp/fake_ssh/input_private_key_1", "/tmp/fake_ssh/input_private_key_2"}
-)
+var inputPrivateKeys = []string{"/tmp/fake_ssh/input_private_key_1", "/tmp/fake_ssh/input_private_key_2"}
 
 type testCreatedResource struct {
 	name         string
@@ -703,6 +702,7 @@ func newFakeKubeClientProvider(kubeCl *client.KubernetesClient) *fakeKubeClientP
 		kubeCl: kubeCl,
 	}
 }
+
 func (p *fakeKubeClientProvider) KubeClientCtx(context.Context) (*client.KubernetesClient, error) {
 	if p.cleaned {
 		return nil, fmt.Errorf("already cleaned")
@@ -710,7 +710,8 @@ func (p *fakeKubeClientProvider) KubeClientCtx(context.Context) (*client.Kuberne
 
 	return p.kubeCl, nil
 }
-func (p *fakeKubeClientProvider) Cleanup(stopSSH bool) {
+
+func (p *fakeKubeClientProvider) Cleanup(_ context.Context, stopSSH bool) {
 	p.cleaned = true
 	p.stopSSH = stopSSH
 }
@@ -872,7 +873,7 @@ func (ts *baseTest) assertResourcesSetDestroyedInCache(t *testing.T, destroyed b
 	require.Equal(t, destroyed, destroyedInCache, "resources destroyed should be set correct flag")
 }
 
-func (ts *baseTest) assertKubeProviderCleaned(t *testing.T, cleaned bool, shouldStop bool) {
+func (ts *baseTest) assertKubeProviderCleaned(t *testing.T, cleaned, shouldStop bool) {
 	require.False(t, govalue.IsNil(ts.kubeProvider))
 
 	kubeProvider, ok := ts.kubeProvider.(*fakeKubeClientProvider)

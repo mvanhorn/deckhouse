@@ -1,4 +1,4 @@
-// Copyright 2021 Flant JSC
+// Copyright 2026 Flant JSC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,145 +15,203 @@
 package bootstrap
 
 import (
+	"errors"
 	"fmt"
 
 	"gopkg.in/alecthomas/kingpin.v2"
 
 	"github.com/deckhouse/deckhouse/dhctl/pkg/app"
+	"github.com/deckhouse/deckhouse/dhctl/pkg/app/options"
 	"github.com/deckhouse/deckhouse/dhctl/pkg/config"
 	"github.com/deckhouse/deckhouse/dhctl/pkg/kpcontext"
 	"github.com/deckhouse/deckhouse/dhctl/pkg/log"
 	"github.com/deckhouse/deckhouse/dhctl/pkg/operations/bootstrap"
-	"github.com/deckhouse/deckhouse/dhctl/pkg/system/node"
-	"github.com/deckhouse/deckhouse/dhctl/pkg/system/node/ssh"
-	"github.com/deckhouse/deckhouse/dhctl/pkg/system/sshclient"
+	"github.com/deckhouse/deckhouse/dhctl/pkg/operations/phases"
+	"github.com/deckhouse/deckhouse/dhctl/pkg/system/providerinitializer"
+	"github.com/deckhouse/deckhouse/dhctl/pkg/telemetry"
 	"github.com/deckhouse/deckhouse/dhctl/pkg/util/cache"
+	"github.com/deckhouse/deckhouse/dhctl/pkg/util/input"
+	"github.com/deckhouse/deckhouse/dhctl/pkg/util/progressbar"
 )
 
-func DefineBootstrapInstallDeckhouseCommand(cmd *kingpin.CmdClause) *kingpin.CmdClause {
-	app.DefineSSHFlags(cmd, config.NewConnectionConfigParser())
-	app.DefineConfigFlags(cmd)
-	app.DefineBecomeFlags(cmd)
-	app.DefineTFResourceManagementTimeout(cmd)
-	app.DefineKubeFlags(cmd)
-	app.DefineDeckhouseFlags(cmd)
-	app.DefineDeckhouseInstallFlags(cmd)
+func DefineBootstrapInstallDeckhouseCommand(cmd *kingpin.CmdClause, opts *options.Options) *kingpin.CmdClause {
+	app.DefineSSHFlags(cmd, &opts.SSH, config.NewConnectionConfigParser(opts))
+	app.DefineConfigFlags(cmd, &opts.Global)
+	app.DefineBecomeFlags(cmd, &opts.Become)
+	app.DefineTFResourceManagementTimeout(cmd, &opts.Cache)
+	app.DefineKubeFlags(cmd, &opts.Kube)
+	app.DefineDeckhouseFlags(cmd, &opts.Bootstrap)
+	app.DefineDeckhouseInstallFlags(cmd, &opts.Bootstrap)
+	app.DefineImgBundleFlags(cmd, &opts.Registry)
 
 	return cmd.Action(func(c *kingpin.ParseContext) error {
 		ctx := kpcontext.ExtractContext(c)
 
+		span := telemetry.SpanFromContext(ctx)
+		span.SetAttributes(opts.ToSpanAttributes()...)
+
 		logger := log.GetDefaultLogger()
 
-		var sshClient node.SSHClient
-		var err error
-
-		if len(app.SSHHosts) != 0 {
-			sshClient, err = sshclient.NewClientFromFlags(ctx)
-			if err != nil {
+		loggerProvider := log.ExternalLoggerProvider(logger)
+		params := app.ProviderParams(&opts.Global, loggerProvider)
+		sshProviderInitializer, kubeProvider, err := providerinitializer.GetProviders(ctx, params,
+			providerinitializer.WithKubeFlagsDefined(opts.Kube.IsDefined()),
+			providerinitializer.WithKubeConfig(opts.Kube.Config, opts.Kube.ConfigContext, opts.Kube.InCluster),
+		)
+		if err != nil {
+			if !errors.Is(err, providerinitializer.ErrHostsFromCacheNotFound) {
 				return err
 			}
 		}
 
+		defer providerinitializer.CleanupSSHProvider(ctx, logger, sshProviderInitializer)
+
 		bootstraper := bootstrap.NewClusterBootstrapper(&bootstrap.Params{
-			TmpDir:          app.TmpDirName,
-			NodeInterface:   ssh.NewNodeInterfaceWrapper(sshClient),
-			Logger:          logger,
-			IsDebug:         app.IsDebug,
-			DirectoryConfig: app.GetDirConfig(),
+			TmpDir:                 opts.Global.TmpDir,
+			SSHProviderInitializer: sshProviderInitializer,
+			KubeProvider:           kubeProvider,
+			Logger:                 logger,
+			IsDebug:                opts.Global.IsDebug,
+			Options:                opts,
 		})
 
 		return bootstraper.InstallDeckhouse(ctx)
 	})
 }
 
-func DefineBootstrapExecuteBashibleCommand(cmd *kingpin.CmdClause) *kingpin.CmdClause {
-	app.DefineSSHFlags(cmd, config.NewConnectionConfigParser())
-	app.DefineConfigFlags(cmd)
-	app.DefineBecomeFlags(cmd)
-	app.DefineBashibleBundleFlags(cmd)
+func DefineBootstrapExecuteBashibleCommand(cmd *kingpin.CmdClause, opts *options.Options) *kingpin.CmdClause {
+	app.DefineSSHFlags(cmd, &opts.SSH, config.NewConnectionConfigParser(opts))
+	app.DefineConfigFlags(cmd, &opts.Global)
+	app.DefineBecomeFlags(cmd, &opts.Become)
+	app.DefineBashibleBundleFlags(cmd, &opts.Bootstrap)
+	app.DefineImgBundleFlags(cmd, &opts.Registry)
 
 	return cmd.Action(func(c *kingpin.ParseContext) error {
 		ctx := kpcontext.ExtractContext(c)
 
+		span := telemetry.SpanFromContext(ctx)
+		span.SetAttributes(opts.ToSpanAttributes()...)
+
 		logger := log.GetDefaultLogger()
 
-		sshClient, err := sshclient.NewClientFromFlagsWithHosts(ctx)
+		loggerProvider := log.ExternalLoggerProvider(logger)
+		params := app.ProviderParams(&opts.Global, loggerProvider)
+		sshProviderInitializer, kubeProvider, err := providerinitializer.GetProviders(ctx, params)
 		if err != nil {
-			return fmt.Errorf("unable to create ssh-client: %w", err)
-		}
-
-		bootstraper := bootstrap.NewClusterBootstrapper(&bootstrap.Params{
-			TmpDir:          app.TmpDirName,
-			NodeInterface:   ssh.NewNodeInterfaceWrapper(sshClient),
-			Logger:          logger,
-			IsDebug:         app.IsDebug,
-			DirectoryConfig: app.GetDirConfig(),
-		})
-
-		return bootstraper.ExecuteBashible(ctx)
-	})
-}
-
-func DefineCreateResourcesCommand(cmd *kingpin.CmdClause) *kingpin.CmdClause {
-	app.DefineSSHFlags(cmd, config.NewConnectionConfigParser())
-	app.DefineBecomeFlags(cmd)
-	app.DefineConfigsForResourcesPhaseFlags(cmd)
-	app.DefineResourcesFlags(cmd, false)
-	app.DefineKubeFlags(cmd)
-
-	return cmd.Action(func(c *kingpin.ParseContext) error {
-		ctx := kpcontext.ExtractContext(c)
-
-		logger := log.GetDefaultLogger()
-
-		var sshClient node.SSHClient
-		var err error
-
-		if len(app.SSHHosts) != 0 {
-			sshClient, err = sshclient.NewClientFromFlags(ctx)
-			if err != nil {
+			if !errors.Is(err, providerinitializer.ErrHostsFromCacheNotFound) {
 				return err
 			}
 		}
 
-		bootstraper := bootstrap.NewClusterBootstrapper(&bootstrap.Params{
-			TmpDir:          app.TmpDirName,
-			NodeInterface:   ssh.NewNodeInterfaceWrapper(sshClient),
-			Logger:          logger,
-			IsDebug:         app.IsDebug,
-			DirectoryConfig: app.GetDirConfig(),
-		})
+		defer providerinitializer.CleanupSSHProvider(ctx, logger, sshProviderInitializer)
 
+		bootstraper := bootstrap.NewClusterBootstrapper(&bootstrap.Params{
+			TmpDir:                 opts.Global.TmpDir,
+			Logger:                 logger,
+			IsDebug:                opts.Global.IsDebug,
+			SSHProviderInitializer: sshProviderInitializer,
+			KubeProvider:           kubeProvider,
+			Options:                opts,
+		})
+		return bootstraper.ExecuteBashible(ctx)
+	})
+}
+
+func DefineCreateResourcesCommand(cmd *kingpin.CmdClause, opts *options.Options) *kingpin.CmdClause {
+	app.DefineSSHFlags(cmd, &opts.SSH, config.NewConnectionConfigParser(opts))
+	app.DefineBecomeFlags(cmd, &opts.Become)
+	app.DefineConfigsForResourcesPhaseFlags(cmd, &opts.Global)
+	app.DefineResourcesFlags(cmd, &opts.Bootstrap, false)
+	app.DefineKubeFlags(cmd, &opts.Kube)
+
+	return cmd.Action(func(c *kingpin.ParseContext) error {
+		ctx := kpcontext.ExtractContext(c)
+
+		span := telemetry.SpanFromContext(ctx)
+		span.SetAttributes(opts.ToSpanAttributes()...)
+
+		logger := log.GetDefaultLogger()
+
+		loggerProvider := log.ExternalLoggerProvider(logger)
+		params := app.ProviderParams(&opts.Global, loggerProvider)
+		sshProviderInitializer, kubeProvider, err := providerinitializer.GetProviders(ctx, params,
+			providerinitializer.WithKubeFlagsDefined(opts.Kube.IsDefined()),
+			providerinitializer.WithKubeConfig(opts.Kube.Config, opts.Kube.ConfigContext, opts.Kube.InCluster),
+		)
+		if err != nil {
+			if !errors.Is(err, providerinitializer.ErrHostsFromCacheNotFound) {
+				return err
+			}
+		}
+
+		defer providerinitializer.CleanupSSHProvider(ctx, logger, sshProviderInitializer)
+
+		bootstraper := bootstrap.NewClusterBootstrapper(&bootstrap.Params{
+			TmpDir:                 opts.Global.TmpDir,
+			Logger:                 logger,
+			IsDebug:                opts.Global.IsDebug,
+			SSHProviderInitializer: sshProviderInitializer,
+			KubeProvider:           kubeProvider,
+			Options:                opts,
+		})
 		return bootstraper.CreateResources(ctx)
 	})
 }
 
-func DefineBootstrapAbortCommand(cmd *kingpin.CmdClause) *kingpin.CmdClause {
-	app.DefineSSHFlags(cmd, config.NewConnectionConfigParser())
-	app.DefineBecomeFlags(cmd)
-	app.DefineConfigFlags(cmd)
-	app.DefineCacheFlags(cmd)
-	app.DefineSanityFlags(cmd)
-	app.DefineAbortFlags(cmd)
+func DefineBootstrapAbortCommand(cmd *kingpin.CmdClause, opts *options.Options) *kingpin.CmdClause {
+	app.DefineSSHFlags(cmd, &opts.SSH, config.NewConnectionConfigParser(opts))
+	app.DefineBecomeFlags(cmd, &opts.Become)
+	app.DefineConfigFlags(cmd, &opts.Global)
+	app.DefineCacheFlags(cmd, &opts.Cache)
+	app.DefineSanityFlags(cmd, &opts.Global)
+	app.DefineAbortFlags(cmd, &opts.Bootstrap)
+	app.DefineImgBundleFlags(cmd, &opts.Registry)
 
 	return cmd.Action(func(c *kingpin.ParseContext) error {
 		ctx := kpcontext.ExtractContext(c)
+
+		span := telemetry.SpanFromContext(ctx)
+		span.SetAttributes(opts.ToSpanAttributes()...)
+
 		logger := log.GetDefaultLogger()
 
-		sshClient, err := sshclient.NewClientFromFlags(ctx)
+		loggerProvider := log.ExternalLoggerProvider(logger)
+		params := app.ProviderParams(&opts.Global, loggerProvider)
+		sshProviderInitializer, kubeProvider, err := providerinitializer.GetProviders(ctx, params)
 		if err != nil {
-			return err
+			if !errors.Is(err, providerinitializer.ErrHostsFromCacheNotFound) {
+				return err
+			}
 		}
 
+		defer providerinitializer.CleanupSSHProvider(ctx, logger, sshProviderInitializer)
+
 		bootstraper := bootstrap.NewClusterBootstrapper(&bootstrap.Params{
-			TmpDir:          app.TmpDirName,
-			NodeInterface:   ssh.NewNodeInterfaceWrapper(sshClient),
-			Logger:          logger,
-			IsDebug:         app.IsDebug,
-			DirectoryConfig: app.GetDirConfig(),
+			TmpDir:                 opts.Global.TmpDir,
+			Logger:                 logger,
+			IsDebug:                opts.Global.IsDebug,
+			SSHProviderInitializer: sshProviderInitializer,
+			KubeProvider:           kubeProvider,
+			Options:                opts,
 		})
 
-		if err = bootstraper.Abort(ctx, app.ForceAbortFromCache); err != nil {
+		interactive := input.IsTerminal() && !opts.Global.ShowProgress
+		if interactive {
+			onComplete, phasesChan, err := progressbar.InitProgressBarWithDeferredFunc("Destroy cluster", logger)
+			if err != nil {
+				return err
+			}
+
+			onUpdateFunc := func(progress phases.Progress) error {
+				phasesChan <- progress
+				return nil
+			}
+			bootstraper.OnProgressFunc = onUpdateFunc
+
+			defer onComplete()
+		}
+
+		if err = bootstraper.Abort(ctx, opts.Bootstrap.ForceAbortFromCache); err != nil {
 			msg := fmt.Sprintf("Failed to abort cluster: %v", err)
 			cache.GetGlobalTmpCleaner().DisableCleanup(msg)
 			return err
@@ -163,49 +221,77 @@ func DefineBootstrapAbortCommand(cmd *kingpin.CmdClause) *kingpin.CmdClause {
 	})
 }
 
-func DefineBaseInfrastructureCommand(cmd *kingpin.CmdClause) *kingpin.CmdClause {
-	app.DefineConfigFlags(cmd)
-	app.DefineCacheFlags(cmd)
-	app.DefineDropCacheFlags(cmd)
+func DefineBaseInfrastructureCommand(cmd *kingpin.CmdClause, opts *options.Options) *kingpin.CmdClause {
+	app.DefineConfigFlags(cmd, &opts.Global)
+	app.DefineCacheFlags(cmd, &opts.Cache)
+	app.DefineDropCacheFlags(cmd, &opts.Cache)
+	app.DefineImgBundleFlags(cmd, &opts.Registry)
 
 	return cmd.Action(func(c *kingpin.ParseContext) error {
 		ctx := kpcontext.ExtractContext(c)
+
+		span := telemetry.SpanFromContext(ctx)
+		span.SetAttributes(opts.ToSpanAttributes()...)
+
 		logger := log.GetDefaultLogger()
 
+		loggerProvider := log.ExternalLoggerProvider(logger)
+		params := app.ProviderParams(&opts.Global, loggerProvider)
+		sshProviderInitializer, kubeProvider, err := providerinitializer.GetProviders(ctx, params)
+		if err != nil {
+			if !errors.Is(err, providerinitializer.ErrHostsFromCacheNotFound) {
+				return err
+			}
+		}
+
+		defer providerinitializer.CleanupSSHProvider(ctx, logger, sshProviderInitializer)
+
 		bootstraper := bootstrap.NewClusterBootstrapper(&bootstrap.Params{
-			TmpDir:          app.TmpDirName,
-			Logger:          logger,
-			IsDebug:         app.IsDebug,
-			DirectoryConfig: app.GetDirConfig(),
+			TmpDir:                 opts.Global.TmpDir,
+			Logger:                 logger,
+			IsDebug:                opts.Global.IsDebug,
+			SSHProviderInitializer: sshProviderInitializer,
+			KubeProvider:           kubeProvider,
+			Options:                opts,
 		})
 
-		err := bootstraper.BaseInfrastructure(ctx)
+		err = bootstraper.BaseInfrastructure(ctx)
 		cache.GetGlobalTmpCleaner().DisableCleanup("Create base infra for cluster")
+
 		return err
 	})
 }
 
-func DefineExecPostBootstrapScript(cmd *kingpin.CmdClause) *kingpin.CmdClause {
-	app.DefineSSHFlags(cmd, config.NewConnectionConfigParser())
-	app.DefineBecomeFlags(cmd)
-	app.DefinePostBootstrapScriptFlags(cmd)
+func DefineExecPostBootstrapScript(cmd *kingpin.CmdClause, opts *options.Options) *kingpin.CmdClause {
+	app.DefineSSHFlags(cmd, &opts.SSH, config.NewConnectionConfigParser(opts))
+	app.DefineBecomeFlags(cmd, &opts.Become)
+	app.DefinePostBootstrapScriptFlags(cmd, &opts.Bootstrap)
 
 	return cmd.Action(func(c *kingpin.ParseContext) error {
 		ctx := kpcontext.ExtractContext(c)
 
-		logger := log.GetDefaultLogger()
+		span := telemetry.SpanFromContext(ctx)
+		span.SetAttributes(opts.ToSpanAttributes()...)
 
-		sshClient, err := sshclient.NewClientFromFlagsWithHosts(ctx)
+		logger := log.GetDefaultLogger()
+		loggerProvider := log.ExternalLoggerProvider(logger)
+		params := app.ProviderParams(&opts.Global, loggerProvider)
+		sshProviderInitializer, kubeProvider, err := providerinitializer.GetProviders(ctx, params)
 		if err != nil {
-			return fmt.Errorf("unable to create ssh-client: %w", err)
+			if !errors.Is(err, providerinitializer.ErrHostsFromCacheNotFound) {
+				return err
+			}
 		}
 
+		defer providerinitializer.CleanupSSHProvider(ctx, logger, sshProviderInitializer)
+
 		bootstraper := bootstrap.NewClusterBootstrapper(&bootstrap.Params{
-			TmpDir:          app.TmpDirName,
-			NodeInterface:   ssh.NewNodeInterfaceWrapper(sshClient),
-			Logger:          logger,
-			IsDebug:         app.IsDebug,
-			DirectoryConfig: app.GetDirConfig(),
+			TmpDir:                 opts.Global.TmpDir,
+			Logger:                 logger,
+			IsDebug:                opts.Global.IsDebug,
+			Options:                opts,
+			SSHProviderInitializer: sshProviderInitializer,
+			KubeProvider:           kubeProvider,
 		})
 
 		return bootstraper.ExecPostBootstrap(ctx)

@@ -8,7 +8,6 @@
     {!{- $secrets = append ( slice "projects/data/101ceaca-97cd-462f-aed5-070d9b9de175/stage-registry/writetoken" "login" "DECKHOUSE_REGISTRY_STAGE_USER" ) $secrets -}!}
     {!{- $secrets = append ( slice "projects/data/101ceaca-97cd-462f-aed5-070d9b9de175/stage-registry/writetoken" "password" "DECKHOUSE_REGISTRY_STAGE_PASSWORD" ) $secrets -}!}
     {!{ tmpl.Exec "import_secrets" $secrets | strings.Indent 2 }!}
-{!{ tmpl.Exec "d8cli_install_step" $ctx | strings.Indent 2 }!}
 {!{ tmpl.Exec "login_stage_registry_step" $ctx | strings.Indent 2 }!}
 {!{ tmpl.Exec "login_readonly_registry_step" $ctx | strings.Indent 2 }!}
 {!{ tmpl.Exec "login_rw_registry_step" $ctx | strings.Indent 2 }!}
@@ -26,7 +25,7 @@
     set -euo pipefail
 
     REGISTRY_SUFFIX=$(echo "${WERF_ENV}" | tr '[:upper:]' '[:lower:]')
-    IMAGE_TAG=$(d8-build dk slugify --format docker-tag "${CI_COMMIT_TAG}")
+    IMAGE_TAG=$(werf slugify --format docker-tag "${CI_COMMIT_TAG}")
     STAGE_PATH="${STAGE_REGISTRY_HOST}/deckhouse/${REGISTRY_SUFFIX}"
     PROD_PATH="${DECKHOUSE_REGISTRY_HOST}/deckhouse/${REGISTRY_SUFFIX}"
 
@@ -37,11 +36,10 @@
       exit 1
     fi
 
-    STAGE_OSS="${STAGE_REGISTRY_HOST}/sys/deckhouse-oss"
     while IFS= read -r IMG_DIGEST; do
       [[ -z "${IMG_DIGEST}" ]] && continue
       D_HEX="${IMG_DIGEST#sha256:}"
-      SRC_ATT="${STAGE_OSS}:sha256-${D_HEX}.att"
+      SRC_ATT="${STAGE_PATH}:sha256-${D_HEX}.att"
       DST_ATT="${PROD_PATH}:sha256-${D_HEX}.att"
       if regctl image manifest "${SRC_ATT}" >/dev/null 2>&1; then
         echo "⚓️ 💫 [$(date -u)] Copying attestation '${SRC_ATT}' -> '${DST_ATT}'"
@@ -62,7 +60,7 @@
     # CE/EE/FE -> ce/ee/fe
     REGISTRY_SUFFIX=$(echo "${WERF_ENV}" | tr '[:upper:]' '[:lower:]')
 
-    IMAGE_TAG=$(d8-build dk slugify --format docker-tag "${CI_COMMIT_TAG}")
+    IMAGE_TAG=$(werf slugify --format docker-tag "${CI_COMMIT_TAG}")
 
     STAGE_PATH="${STAGE_REGISTRY_HOST}/deckhouse/${REGISTRY_SUFFIX}"
     PROD_PATH="${DECKHOUSE_REGISTRY_HOST}/deckhouse/${REGISTRY_SUFFIX}"
@@ -101,7 +99,7 @@
     # Promote from images_digests.json
     if regctl image get-file "${STAGE_PATH}/install:${IMAGE_TAG}" /deckhouse/candi/images_digests.json > "${DIGESTS_JSON}" 2>/dev/null; then
       echo "⚓️ 💫 [$(date -u)] Promoting component images from images_digests.json (by digest)"
-      STAGE_PATH="${STAGE_REGISTRY_HOST}/sys/deckhouse-oss"
+      STAGE_PATH="${STAGE_REGISTRY_HOST}/deckhouse/${REGISTRY_SUFFIX}"
       while IFS= read -r IMG_DIGEST; do
         [[ -z "${IMG_DIGEST}" ]] && continue
         SRC_REF="${STAGE_PATH}@${IMG_DIGEST}"

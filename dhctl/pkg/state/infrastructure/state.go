@@ -45,7 +45,7 @@ const (
 	infraStateSecretNodeNameLabelKey  = "node.deckhouse.io/node-name"
 )
 
-var ErrNoInfrastructureState = errors.New("Infrastructure state is not found in outputs.")
+var ErrNoInfrastructureState = errors.New("Infrastructure state was not found in outputs.")
 
 func GetClusterStateFromCluster(ctx context.Context, kubeCl *client.KubernetesClient) ([]byte, error) {
 	var st []byte
@@ -82,12 +82,13 @@ func GetClusterUUID(ctx context.Context, kubeCl *client.KubernetesClient) (strin
 }
 
 func GetNodesStateSecretsFromCluster(ctx context.Context, kubeCl *client.KubernetesClient, action string, additionalLabels ...kubernetes.LabelSelector) ([]*v1.Secret, error) {
-	selectors := []kubernetes.LabelSelector{
-		{
-			Label:    manifests.NodeInfrastructureStateLabelKey,
-			Operator: selection.Exists,
-		},
-	}
+	selectors := make([]kubernetes.LabelSelector, 0, 1+len(additionalLabels))
+
+	selectors = append(selectors, kubernetes.LabelSelector{
+
+		Label:    manifests.NodeInfrastructureStateLabelKey,
+		Operator: selection.Exists,
+	})
 
 	selectors = append(selectors, additionalLabels...)
 
@@ -118,17 +119,17 @@ func GetNodesStateSecretsFromCluster(ctx context.Context, kubeCl *client.Kuberne
 
 			name := nodeState.Labels[infraStateSecretNodeNameLabelKey]
 			if name == "" {
-				return fmt.Errorf("Cannot determine Node name for %q secret", secretName)
+				return fmt.Errorf("Cannot determine Node name for secret %q", secretName)
 			}
 
 			if _, ok := nodeState.Labels[global.InfrastructureStateBackupLabelKey]; ok {
-				log.DebugF("Found backup state secret %s for node: %s. Skip.\n", secretName, name)
+				log.DebugF("Found backup state secret %s for node: %s. Skipping.\n", secretName, name)
 				continue
 			}
 
 			nodeGroup := nodeState.Labels[infraStateSecretNodeGroupLabelKey]
 			if nodeGroup == "" {
-				return fmt.Errorf("can't determine NodeGroup for %q secret", nodeState.GetName())
+				return fmt.Errorf("Cannot determine NodeGroup for secret %q", nodeState.GetName())
 			}
 			secrets = append(secrets, &nodeState)
 		}
@@ -168,12 +169,12 @@ func (p HasNodeStateInClusterParams) String() string {
 func HasNodeStateInCluster(ctx context.Context, kubeCl *client.KubernetesClient, params HasNodeStateInClusterParams) (bool, error) {
 	nodeName := params.Name
 	if nodeName == "" {
-		return false, fmt.Errorf("HasNodeStateInCluster: internal error. node name not passed")
+		return false, fmt.Errorf("HasNodeStateInCluster: internal error. node name was not passed")
 	}
 
 	nodeGroup := params.NodeGroup
 	if nodeGroup == "" {
-		return false, fmt.Errorf("HasNodeStateInCluster: internal error. node group not passed for %s", nodeName)
+		return false, fmt.Errorf("HasNodeStateInCluster: internal error. node group was not passed for %s", nodeName)
 	}
 
 	selectors := []kubernetes.LabelSelector{
@@ -211,9 +212,13 @@ func HasNodeStateInCluster(ctx context.Context, kubeCl *client.KubernetesClient,
 	}
 }
 
-func GetMasterNodesStateFromCluster(ctx context.Context, kubeCl *client.KubernetesClient) (map[string][]byte, error) {
+func GetMasterNodesStateFromCluster(ctx context.Context, kubeProvider kubernetes.KubeClientProviderWithCtx) (map[string][]byte, error) {
 	ngSelector := getInfraStateSecretsSelectorForNodeGroup(global.MasterNodeGroupName)
-	secrets, err := GetNodesStateSecretsFromCluster(ctx, kubeCl, "all control-planes", ngSelector)
+	kubeClient, err := kubeProvider.KubeClientCtx(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("Could not get kube client: %w", err)
+	}
+	secrets, err := GetNodesStateSecretsFromCluster(ctx, kubeClient, "all control-planes", ngSelector)
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +230,7 @@ func GetMasterNodesStateFromCluster(ctx context.Context, kubeCl *client.Kubernet
 
 	states, ok := statesForNgMap[global.MasterNodeGroupName]
 	if !ok {
-		return nil, fmt.Errorf("GetMasterNodesStateFromCluster: states for master node group not found")
+		return nil, fmt.Errorf("GetMasterNodesStateFromCluster: states for the master node group were not found")
 	}
 
 	return states.State, nil
@@ -239,12 +244,12 @@ func extractNodesStatesFromSecrets(secrets []*v1.Secret) (map[string]state.NodeG
 
 		name := nodeState.Labels[infraStateSecretNodeNameLabelKey]
 		if name == "" {
-			return nil, fmt.Errorf("Cannot determine Node name for %q secret", secretName)
+			return nil, fmt.Errorf("Cannot determine Node name for secret %q", secretName)
 		}
 
 		nodeGroup := nodeState.Labels[infraStateSecretNodeGroupLabelKey]
 		if nodeGroup == "" {
-			return nil, fmt.Errorf("Cannot determine NodeGroup for %q secret", secretName)
+			return nil, fmt.Errorf("Cannot determine NodeGroup for secret %q", secretName)
 		}
 
 		if _, ok := extractedState[nodeGroup]; !ok {
