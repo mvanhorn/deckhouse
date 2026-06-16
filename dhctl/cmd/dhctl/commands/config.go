@@ -172,7 +172,7 @@ func DefineRenderControlPlaneAndPKI(cmd *kingpin.CmdClause, opts *options.Option
 		}
 
 		extractor := controlplane.NewSettingsExtractor(
-			metaConfig, 
+			metaConfig,
 			config.NewSchemaStore(&opts.Global),
 			config.GetEdition(),
 			loggerProvider,
