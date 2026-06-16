@@ -78,7 +78,6 @@ editions:
   - deckhouse-tools
   - descheduler
   - documentation
-  - extended-monitoring
   - ingress-nginx
   - istio
   - kube-dns

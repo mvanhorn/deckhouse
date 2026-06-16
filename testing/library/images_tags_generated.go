@@ -261,12 +261,6 @@ var DefaultImagesDigests = map[string]interface{}{
 		"docsBuilder": "imageHash-documentation-docsBuilder",
 		"web":         "imageHash-documentation-web",
 	},
-	"extendedMonitoring": map[string]interface{}{
-		"eventsExporter":             "imageHash-extendedMonitoring-eventsExporter",
-		"extendedMonitoringExporter": "imageHash-extendedMonitoring-extendedMonitoringExporter",
-		"imageAvailabilityExporter":  "imageHash-extendedMonitoring-imageAvailabilityExporter",
-		"x509CertificateExporter":    "imageHash-extendedMonitoring-x509CertificateExporter",
-	},
 	"ingressNginx": map[string]interface{}{
 		"controller112":         "imageHash-ingressNginx-controller112",
 		"controller114":         "imageHash-ingressNginx-controller114",
