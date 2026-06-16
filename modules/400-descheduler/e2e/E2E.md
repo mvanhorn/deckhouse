@@ -51,7 +51,6 @@ task run:statefulset-pdb-allows-one-disruption
 task run:statefulset-single-replica-eviction
 task run:minreplicas-not-supported
 
-
 # Run with verbose output
 task run:verbose
 
@@ -150,4 +149,3 @@ e2e/
 | `task run:statefulset-pdb-allows-one-disruption` | `tests/statefulset-pdb-allows-one-disruption/` | StatefulSet + PDB `maxUnavailable: 1`: evictions are serialized, StatefulSet stays available |
 | `task run:statefulset-single-replica-eviction` | `tests/statefulset-single-replica-eviction/` | Single-replica StatefulSet is evicted — no `minReplicas` protection exists in Deckhouse |
 | `task run:minreplicas-not-supported` | `tests/descheduler-minreplicas-not-supported/` | `spec.minReplicas` cannot be persisted in the CR; manual ConfigMap edits are overwritten by Deckhouse |
-
