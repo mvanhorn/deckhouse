@@ -166,10 +166,6 @@
     "observability",
     "ssdlc"
   ],
-  "monitoring-custom": [
-    "observability",
-    "ssdlc"
-  ],
   "monitoring-deckhouse": [
     "observability",
     "ssdlc"
