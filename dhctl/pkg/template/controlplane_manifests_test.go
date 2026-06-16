@@ -1142,9 +1142,9 @@ func testSignatureArgsAPIServerRender(t *testing.T) {
 			data := getDataForFullManifestRendering("1.33")
 			if tst.changeData != nil {
 				tst.changeData(data)
-				pod := renderAPIServerManifest(t, data)
-				assertEncryptionArgs(t, pod, tst.shouldPresent)
 			}
+			pod := renderAPIServerManifest(t, data)
+			assertEncryptionArgs(t, pod, tst.shouldPresent)
 		})
 	}
 }
