@@ -39,7 +39,7 @@ import (
 const (
 	privKeyFilename = "signature-private.jwk"
 	pubKeyFilename  = "signature-public.jwks"
-	configFilename  = "encryption-config.yaml"
+	configFilename  = "secret-encryption-config.yaml"
 
 	signaturePath        = app.NodeDeckhouseDirectoryPath + `/signature`
 	kubernetesConfigPath = `/etc/kubernetes`

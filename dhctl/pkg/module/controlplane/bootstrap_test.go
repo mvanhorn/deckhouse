@@ -137,7 +137,7 @@ func TestPrepare(t *testing.T) {
 		const (
 			keyPath    = "/opt/deckhouse/signature/signature-private.jwk"
 			jwksPath   = "/opt/deckhouse/signature/signature-public.jwks"
-			configPath = "/opt/deckhouse/signature/encryption-config.yaml"
+			configPath = "/opt/deckhouse/signature/secret-encryption-config.yaml"
 		)
 
 		require.Contains(t, m, keyPath, "should upload private key")
