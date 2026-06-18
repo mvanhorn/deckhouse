@@ -67,10 +67,10 @@ type Application struct {
 	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// Spec defines the behavior of an Application.
+	// Defines the application configuration.
 	Spec ApplicationSpec `json:"spec"`
 
-	// Status of an Application.
+	// Application status.
 	Status ApplicationStatus `json:"status,omitempty"`
 }
 
@@ -121,12 +121,13 @@ type ApplicationStatus struct {
 	// +optional
 	LastAppliedConfiguration runtime.RawExtension `json:"lastAppliedConfiguration"`
 
-	// Conditions represent the latest available observations of the application's state.
+	// Conditions reflecting the latest observations of the application state.
 	// +optional
 	// +patchMergeKey=type
 	// +patchStrategy=merge
 	// +listType=map
 	// +listMapKey=type
+	// +crd-enricher:deckhouse:documentation:raw:items.description=Condition describing one aspect of the current application state.
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
 }
 
