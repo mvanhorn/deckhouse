@@ -22,7 +22,6 @@ extractedLinksMax: 0
 * [`monitoring-custom`](/modules/monitoring-custom/) — упрощает настройку мониторинга пользовательских приложений, требуя только указания определенного лейбла для нужного приложения;
 * [`monitoring-deckhouse`](/modules/monitoring-deckhouse/) — обеспечивает мониторинг компонентов и сервисов DKP;
 * [`monitoring-kubernetes`](/modules/monitoring-kubernetes/) — обеспечивает прозрачный и своевременный контроль состояния всех узлов кластера и ключевых инфраструктурных компонентов;
-* [`monitoring-kubernetes-control-plane`](/modules/monitoring-kubernetes-control-plane/) — организует безопасный сбор метрик и предоставляет базовый набор правил мониторинга компонентов control plane кластера;
 * [`upmeter`](/modules/upmeter/) — проверяет доступность платформы и состояние компонентов кластера в реальном времени и выводит информацию на соответствующие дашборды.
 
 В подразделе на данный момент описаны:
