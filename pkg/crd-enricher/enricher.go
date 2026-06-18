@@ -638,14 +638,15 @@ func namedOf(typ types.Type) *types.Named {
 
 // parseJSONTag extracts the JSON property name and the inline flag from a
 // struct tag, reporting whether the field is skipped from JSON entirely.
-func parseJSONTag(tag string) (name string, inline, skip bool) {
+func parseJSONTag(tag string) (string, bool, bool) {
 	value := reflect.StructTag(tag).Get("json")
 	if value == "" {
 		return "", false, false
 	}
 
 	parts := strings.Split(value, ",")
-	name = parts[0]
+	name := parts[0]
+	inline := false
 	for _, opt := range parts[1:] {
 		if opt == "inline" {
 			inline = true
