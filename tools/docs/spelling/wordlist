@@ -2677,3 +2677,9 @@ zoneTagCategory
 юнит
 юнита
 ️Необходимо
+ControlPlaneNode
+ControlPlaneOperation
+авторизующий
+мультимастерными
+одномастерными
+перезапускающий
