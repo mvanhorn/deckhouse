@@ -48,7 +48,7 @@ metadata:
   name: capi-controller-manager
   namespace: d8-cloud-instance-manager
   annotations:
-    werf.io/deploy-on: pre-install,pre-upgrade,pre-rollback  
+    werf.io/deploy-on: pre-install,pre-upgrade,pre-rollback
   {{- include "helm_lib_module_labels" (list . (dict "app" "capi-controller-manager")) | nindent 2 }}
 spec:
   {{- include "helm_lib_deployment_on_master_strategy_and_replicas_for_ha" . | nindent 2 }}
@@ -83,7 +83,7 @@ spec:
       containers:
       - image: {{ include "helm_lib_module_image" (list . "capiControllerManager") }}
         name: capi-controller-manager
-        {{- include "helm_lib_module_container_security_context_pss_restricted_flexible" dict | nindent 8 }}
+        {{- include "helm_lib_module_container_security_context_pss_restricted_flexible" (dict "seccompProfile" true) | nindent 8 }}
         command:
         - /capi-controller-manager
         args:
