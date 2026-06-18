@@ -25,15 +25,18 @@
 //
 // Markers are regular Go comments that start with a plus sign, exactly like
 // the markers consumed by controller-gen. Every enricher marker is namespaced
-// with the single, canonical prefix
+// with the canonical "crd-enricher:" prefix and comes in two shapes:
 //
-//	+crd-enricher:deckhouse:documentation:<entity>[:<key>][=<value>]
+//	+crd-enricher:raw:<key>[=<value>]                        // raw schema injection
+//	+crd-enricher:deckhouse:documentation:<entity>[=<value>] // documentation entity
 //
-// where "deckhouse" is the domain, "documentation" the subdomain and <entity>
-// one of raw, crd, examples, deprecated or default. No bare or legacy form is
+// The raw entity injects a standard schema field and lives directly under the
+// prefix; the documentation entities (crd, examples, deprecated, default) carry
+// the extra "deckhouse:documentation" sub-namespace. No bare or legacy form is
 // recognised:
 //
 //	type ModuleSourceSpec struct {
+//		// +crd-enricher:raw:pattern=^(\d+h)?(\d+m)?(\d+s)?$
 //		// +crd-enricher:deckhouse:documentation:default=3m
 //		// +crd-enricher:deckhouse:documentation:examples=5m
 //		// +crd-enricher:deckhouse:documentation:examples=1h

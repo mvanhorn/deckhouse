@@ -75,7 +75,7 @@ type ModuleSettingsDefinitionVersion struct {
 	// Settings schema for the given module version.
 	// +kubebuilder:validation:Schemaless
 	// +kubebuilder:pruning:PreserveUnknownFields
-	// +crd-enricher:deckhouse:documentation:raw:type=object
+	// +crd-enricher:raw:type=object
 	Schema *apiextensionsv1.CustomResourceValidation `json:"schema,omitempty"`
 	// List of conversion rules for this version.
 	Conversions []ModuleSettingsConversion `json:"conversions,omitempty"`

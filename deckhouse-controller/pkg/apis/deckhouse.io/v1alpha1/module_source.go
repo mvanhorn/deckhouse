@@ -88,7 +88,7 @@ type ModuleSourceSpec struct {
 	// Interval for registry scan.
 	//
 	// Defines the frequency of checking the container registry for new modules and their versions.
-	// +crd-enricher:deckhouse:documentation:raw:pattern=^(\d+h)?(\d+m)?(\d+s)?$
+	// +crd-enricher:raw:pattern=^(\d+h)?(\d+m)?(\d+s)?$
 	// +crd-enricher:deckhouse:documentation:default=3m
 	// +crd-enricher:deckhouse:documentation:examples=5m
 	// +crd-enricher:deckhouse:documentation:examples=1h

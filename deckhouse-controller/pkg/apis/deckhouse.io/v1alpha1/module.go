@@ -210,8 +210,8 @@ type ModuleStatus struct {
 	Phase string `json:"phase,omitempty"`
 	// Hooks status report.
 	HooksState string `json:"hooksState,omitempty"`
-	// +crd-enricher:deckhouse:documentation:raw:x-kubernetes-patch-strategy=merge
-	// +crd-enricher:deckhouse:documentation:raw:x-kubernetes-patch-merge-key=type
+	// +crd-enricher:raw:x-kubernetes-patch-strategy=merge
+	// +crd-enricher:raw:x-kubernetes-patch-merge-key=type
 	Conditions []ModuleCondition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
 }
 

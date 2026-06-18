@@ -69,6 +69,8 @@ var _ runtime.Object = (*ApplicationPackageVersion)(nil)
 // +kubebuilder:printcolumn:name="MetadataLoaded",type="string",JSONPath=".status.conditions[?(@.type=='MetadataLoaded')].status"
 // +kubebuilder:printcolumn:name="Message",type="string",JSONPath=".status.conditions[?(@.type=='MetadataLoaded')].message"
 // +kubebuilder:printcolumn:name="UsedBy",type=integer,JSONPath=`.status.usedByCount`
+// +crd-enricher:raw:properties.apiVersion.description="APIVersion defines the versioned schema of this representation of an object.\nServers should convert recognized schemas to the latest internal value, and\nmay reject unrecognized values.\nMore info [in the Kubernetes documentation](https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources)"
+// +crd-enricher:raw:properties.kind.description="Kind is a string value representing the REST resource this object represents.\nServers may infer this from the endpoint the client submits requests to.\nCannot be updated.\nIn CamelCase.\nMore info [in the Kubernetes documentation](https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds)"
 
 // ApplicationPackageVersion represents a version of an application package.
 type ApplicationPackageVersion struct {
@@ -117,7 +119,7 @@ type ApplicationPackageVersionStatus struct {
 	// +patchStrategy=merge
 	// +listType=map
 	// +listMapKey=type
-	// +crd-enricher:deckhouse:documentation:raw:items.description=Condition describing one aspect of the current package version state.
+	// +crd-enricher:raw:items.description=Condition describing one aspect of the current package version state.
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
 
 	// Information about applications that are using this package version.

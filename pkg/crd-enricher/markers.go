@@ -20,16 +20,22 @@ import (
 )
 
 // markerPrefix namespaces every marker owned by the enricher. It is the single,
-// canonical way to attach enricher metadata to a struct; no bare or legacy
-// forms are honoured. Markers follow the pattern
+// canonical root every enricher marker carries; no bare or legacy forms are
+// honoured. Two shapes are recognised:
 //
-//	+crd-enricher:deckhouse:documentation:<entity>[:<key>][=<value>]
+//	+crd-enricher:raw:<key>[=<value>]                       // raw schema injection
+//	+crd-enricher:deckhouse:documentation:<entity>[=<value>] // documentation entity
 //
-// where "deckhouse" is the domain, "documentation" the subdomain and <entity>
-// one of the entities defined below (raw, crd, examples, deprecated, default).
-// The prefix is stripped during parsing so the rest of the enricher matches on
-// the bare entity name.
-const markerPrefix = "crd-enricher:deckhouse:documentation:"
+// The raw entity lives directly under the prefix because it injects a standard
+// schema field rather than deckhouse-specific documentation. The documentation
+// entities (crd, examples, deprecated, default) carry the extra
+// "deckhouse:documentation" sub-namespace. Both shapes are reduced to the bare
+// entity name during parsing so the rest of the enricher matches on it.
+const markerPrefix = "crd-enricher:"
+
+// docSubPrefix is the "deckhouse:documentation" sub-namespace stripped from the
+// documentation entities after markerPrefix. The raw entity does not carry it.
+const docSubPrefix = "deckhouse:documentation:"
 
 // docKeyPrefix is the schema-field prefix the rendered CRDs use for the simple
 // documentation entities: examples, deprecated and default render as
@@ -42,7 +48,7 @@ const examplesMarker = "examples"
 
 // rawMarkerPrefix is the entity that injects an arbitrary standard schema field
 // named by the <key> that follows it (not under an x-doc-* key). For example
-// "+crd-enricher:deckhouse:documentation:raw:pattern=^\d+$" sets the schema
+// "+crd-enricher:raw:pattern=^\d+$" sets the schema
 // "pattern" field, which is needed for fields controller-gen cannot annotate
 // directly (such as a regex pattern on a metav1.Duration). A dotted <key> walks
 // into nested schema nodes.
@@ -114,11 +120,13 @@ func parseMarkerLine(line string) (marker, bool) {
 		m = marker{name: body}
 	}
 
-	// Enricher markers are namespaced with markerPrefix; strip it so downstream
-	// code matches on the bare entity name (crd, raw:..., examples, …) and flag
-	// them as the enricher's own so they are told apart from other markers.
+	// Enricher markers are namespaced with markerPrefix; strip it and the
+	// optional "deckhouse:documentation" sub-namespace carried by the
+	// documentation entities so downstream code matches on the bare entity name
+	// (crd, raw:..., examples, …), and flag them as the enricher's own so they
+	// are told apart from other markers.
 	if rest, ok := strings.CutPrefix(m.name, markerPrefix); ok {
-		m.name = rest
+		m.name = strings.TrimPrefix(rest, docSubPrefix)
 		m.enricher = true
 	}
 

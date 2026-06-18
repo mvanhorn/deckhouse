@@ -32,11 +32,11 @@ func TestParseMarkerLine(t *testing.T) {
 		{"flag", "+crd-enricher:deckhouse:documentation:deprecated", marker{name: "deprecated", enricher: true}, true},
 		{"scalar", "+crd-enricher:deckhouse:documentation:default=3m", marker{name: "default", rawValue: "3m", hasValue: true, enricher: true}, true},
 		{"empty value", "+crd-enricher:deckhouse:documentation:default=", marker{name: "default", rawValue: "", hasValue: true, enricher: true}, true},
-		{"value with equals", "+crd-enricher:deckhouse:documentation:raw:pattern=a=b", marker{name: "raw:pattern", rawValue: "a=b", hasValue: true, enricher: true}, true},
+		{"value with equals", "+crd-enricher:raw:pattern=a=b", marker{name: "raw:pattern", rawValue: "a=b", hasValue: true, enricher: true}, true},
 		{"whitespace", "  +crd-enricher:deckhouse:documentation:default = 3m  ", marker{name: "default", rawValue: "3m", hasValue: true, enricher: true}, true},
 		{"examples", "+crd-enricher:deckhouse:documentation:examples=5m", marker{name: "examples", rawValue: "5m", hasValue: true, enricher: true}, true},
 		{"crd", "+crd-enricher:deckhouse:documentation:crd={labels: {a: b}}", marker{name: "crd", rawValue: "{labels: {a: b}}", hasValue: true, enricher: true}, true},
-		{"raw", "+crd-enricher:deckhouse:documentation:raw:pattern=^a$", marker{name: "raw:pattern", rawValue: "^a$", hasValue: true, enricher: true}, true},
+		{"raw", "+crd-enricher:raw:pattern=^a$", marker{name: "raw:pattern", rawValue: "^a$", hasValue: true, enricher: true}, true},
 	}
 
 	for _, tc := range cases {

@@ -80,7 +80,7 @@ type ModuleDocumentationSpec struct {
 
 type ModuleDocumentationStatus struct {
 	// +optional
-	// +crd-enricher:deckhouse:documentation:raw:x-kubernetes-patch-strategy=retainKeys
+	// +crd-enricher:raw:x-kubernetes-patch-strategy=retainKeys
 	Conditions   []ModuleDocumentationCondition           `json:"conditions,omitempty" patchStrategy:"retainKeys" patchKey:"address"`
 	RenderResult ModuleDocumentationConditionRenderResult `json:"result,omitempty"`
 }
