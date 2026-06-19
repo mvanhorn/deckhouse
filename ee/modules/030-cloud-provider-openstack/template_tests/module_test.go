@@ -526,7 +526,7 @@ storageclass.kubernetes.io/is-default-class: "true"
 
 	Context("Openstack with admission-policy-engine", func() {
 		BeforeEach(func() {
-			f.ValuesSetFromYaml("global", fmt.Sprintf(globalValues, "1.31", "1.31"))
+			f.ValuesSetFromYaml("global", fmt.Sprintf(globalValues, "1.32", "1.32"))
 			f.ValuesSet("global.modulesImages", GetModulesImages())
 			f.ValuesSetFromYaml("cloudProviderOpenstack", moduleValues)
 			f.ValuesSet("global.enabledModules", []string{"vertical-pod-autoscaler", "vertical-pod-autoscaler-crd", "admission-policy-engine-crd"})
