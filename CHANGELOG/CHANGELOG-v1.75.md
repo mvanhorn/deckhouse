@@ -589,6 +589,7 @@
  - **[istio]** Changed GO target version to 1.25. [#17981](https://github.com/deckhouse/deckhouse/pull/17981)
  - **[istio]** Changing the multi-network Istio documentation [#18591](https://github.com/deckhouse/deckhouse/pull/18591)
  - **[istio]** Fixed code in api-proxy and metadata-exporter images with linter recommendations. [#17763](https://github.com/deckhouse/deckhouse/pull/17763)
+ - **[istio]** Vex mitigation implementation [#20562](https://github.com/deckhouse/deckhouse/pull/20562)
  - **[istio]** Warning about the inability to use user 1337 for user applications [#18601](https://github.com/deckhouse/deckhouse/pull/18601)
  - **[istio]** added excludes for DMT lint [#19325](https://github.com/deckhouse/deckhouse/pull/19325)
  - **[istio]** changed vex CVE justifications in pilots images [#19583](https://github.com/deckhouse/deckhouse/pull/19583)
