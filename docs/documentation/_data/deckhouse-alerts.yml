@@ -2634,7 +2634,7 @@ alerts:
       module: node-manager
       edition: ce
       description: |
-        The p99 reconcile duration for controller `{{ $labels.controller }}` has been above 5 seconds for more than 10 minutes.
+        The p99 reconcile duration for controller `{{ $labels.controller }}` has exceeded 5 seconds for more than 10 minutes.
 
         This may indicate slow reconciliation, Kubernetes API latency, or degraded controller performance.
 
