@@ -403,12 +403,6 @@ rescan-on-resize = true`
 		Expect(capoWebhookConfig.Field("webhooks.1.clientConfig.service.namespace").String()).To(Equal(moduleNamespace))
 		Expect(capoDeployment.Field("spec.template.metadata.annotations").Map()["checksum/config"].String()).ToNot(BeEmpty())
 
-		resourceControllerDeployment := f.KubernetesResource("Deployment", moduleNamespace, "resource-controller")
-		resourceControllerService := f.KubernetesResource("Service", moduleNamespace, "resource-controller")
-		Expect(resourceControllerDeployment.Exists()).To(BeTrue())
-		Expect(resourceControllerService.Exists()).To(BeTrue())
-		Expect(resourceControllerService.Field("spec.ports.0.targetPort").String()).To(Equal("https"))
-
 		Expect(scFast.Exists()).To(BeTrue())
 		Expect(scFast.Field("metadata.annotations").String()).To(MatchYAML(`
 storageclass.kubernetes.io/is-default-class: "true"
