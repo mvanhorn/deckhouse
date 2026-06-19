@@ -24,7 +24,7 @@
           To inspect node-controller logs:
 
           ```bash
-          kubectl -n d8-cloud-instance-manager logs deploy/node-controller --all-pods=true
+          d8 k -n d8-cloud-instance-manager logs deploy/node-controller --all-pods=true
           ```
 
     - alert: D8NodeControllerReconcileP99High
