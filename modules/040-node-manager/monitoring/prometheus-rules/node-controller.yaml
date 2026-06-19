@@ -72,7 +72,7 @@
       annotations:
         plk_markup_format: markdown
         plk_protocol_version: "1"
-        summary: Node-controller reconcile errors are high for {{ $labels.controller }}.
+        summary: Node-controller reconcile error rate is high for {{ $labels.controller }}.
         description: |
           Controller `{{ $labels.controller }}` has a reconcile error rate above 0.1 errors per second for more than 10 minutes.
 
