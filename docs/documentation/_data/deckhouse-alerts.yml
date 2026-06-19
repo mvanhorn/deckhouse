@@ -2625,7 +2625,7 @@ alerts:
         d8 k -n d8-cloud-instance-manager logs deploy/node-controller --all-pods=true
         ```
       summary: |
-        Node-controller reconcile errors are high for {{ $labels.controller }}.
+        Node-controller reconcile error rate is high for {{ $labels.controller }}.
       severity: "8"
       markupFormat: markdown
     - name: D8NodeControllerReconcileP99High
